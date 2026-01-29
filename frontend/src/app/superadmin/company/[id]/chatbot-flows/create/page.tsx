@@ -51,6 +51,8 @@ export default function CreateFlowPage() {
   const [saving, setSaving] = useState(false);
   const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
+  /** Validation errors from last save attempt; used to highlight fields and show exact messages */
+  const [validationErrors, setValidationErrors] = useState<Array<{ stepIndex: number; buttonIndex?: number; message: string }>>([]);
   const [flow, setFlow] = useState<any>({
     name: '',
     description: '',
@@ -224,60 +226,85 @@ export default function CreateFlowPage() {
         return;
       }
 
-      // Validate all steps have required fields
-      const invalidSteps: string[] = [];
+      // Validate all steps; collect errors with stepIndex/buttonIndex for highlighting
+      const errors: Array<{ stepIndex: number; buttonIndex?: number; message: string }> = [];
       flow.steps.forEach((step: any, index: number) => {
         if (!step.stepId || !step.stepId.trim()) {
-          invalidSteps.push(`Step ${index + 1}: Missing Step ID`);
+          errors.push({ stepIndex: index, message: `Step ${index + 1}: Step ID is required.` });
         }
         if (!step.type) {
-          invalidSteps.push(`Step ${index + 1} (${step.stepId || 'unnamed'}): Missing Step Type`);
+          errors.push({ stepIndex: index, message: `Step ${index + 1}: Step type is required.` });
         }
-        // For collect_input, validate saveToField
         if (step.type === 'collect_input' && step.content?.inputConfig) {
           if (!step.content.inputConfig.saveToField || !step.content.inputConfig.saveToField.trim()) {
-            invalidSteps.push(`Step ${index + 1} (${step.stepId}): Collect Input requires "Save To Field"`);
+            errors.push({ stepIndex: index, message: `Step ${index + 1} (${step.stepId}): "Save To Field" is required for Collect Input.` });
           }
         }
-        // For dynamic_availability, validate saveToField
         if (step.type === 'dynamic_availability' && step.content?.availabilityConfig) {
           if (!step.content.availabilityConfig.saveToField || !step.content.availabilityConfig.saveToField.trim()) {
-            invalidSteps.push(`Step ${index + 1} (${step.stepId}): Dynamic Availability requires "Save To Field"`);
+            errors.push({ stepIndex: index, message: `Step ${index + 1} (${step.stepId}): "Save To Field" is required for Dynamic Availability.` });
           }
         }
-        // WhatsApp API limits
         if (step.type === 'interactive_buttons' && step.content?.buttons?.length) {
           if (step.content.buttons.length > WHATSAPP_LIMITS.BUTTONS.MAX_PER_MESSAGE) {
-            invalidSteps.push(`Step ${index + 1} (${step.stepId}): Max ${WHATSAPP_LIMITS.BUTTONS.MAX_PER_MESSAGE} buttons allowed. Chain steps for more options.`);
+            errors.push({
+              stepIndex: index,
+              message: `Step ${index + 1} (${step.stepId}): WhatsApp allows max ${WHATSAPP_LIMITS.BUTTONS.MAX_PER_MESSAGE} buttons per message. You have ${step.content.buttons.length}. Remove ${step.content.buttons.length - WHATSAPP_LIMITS.BUTTONS.MAX_PER_MESSAGE} or split into more steps.`
+            });
           }
           step.content.buttons.forEach((btn: any, i: number) => {
             const t = (btn.text?.en || btn.text || btn.title || '').trim();
             if (t.length > WHATSAPP_LIMITS.BUTTONS.TITLE_MAX_LENGTH) {
-              invalidSteps.push(`Step ${index + 1}, Button ${i + 1}: Title max ${WHATSAPP_LIMITS.BUTTONS.TITLE_MAX_LENGTH} characters.`);
+              errors.push({
+                stepIndex: index,
+                buttonIndex: i,
+                message: `Step ${index + 1}, Button ${i + 1}: Title must be ${WHATSAPP_LIMITS.BUTTONS.TITLE_MAX_LENGTH} characters or less (currently ${t.length}). Shorten "${t.slice(0, 15)}${t.length > 15 ? '…' : ''}".`
+              });
             }
           });
         }
         if (step.type === 'interactive_list' && step.content?.listSource !== 'departments' && step.content?.buttons?.length) {
           if (step.content.buttons.length > WHATSAPP_LIMITS.LIST.MAX_ROWS_PER_SECTION) {
-            invalidSteps.push(`Step ${index + 1} (${step.stepId}): Max ${WHATSAPP_LIMITS.LIST.MAX_ROWS_PER_SECTION} list rows. Use "Departments (dynamic)" or pagination.`);
+            errors.push({
+              stepIndex: index,
+              message: `Step ${index + 1} (${step.stepId}): Max ${WHATSAPP_LIMITS.LIST.MAX_ROWS_PER_SECTION} list rows. Use "Departments (dynamic)" or pagination.`
+            });
           }
           step.content.buttons.forEach((btn: any, i: number) => {
             const title = (btn.text?.en || btn.text || btn.title || '').trim();
             const desc = (btn.description || '').trim();
             if (title.length > WHATSAPP_LIMITS.LIST.ROW_TITLE_MAX_LENGTH) {
-              invalidSteps.push(`Step ${index + 1}, Row ${i + 1}: Title max ${WHATSAPP_LIMITS.LIST.ROW_TITLE_MAX_LENGTH} characters.`);
+              errors.push({
+                stepIndex: index,
+                buttonIndex: i,
+                message: `Step ${index + 1}, Row ${i + 1}: Title must be ${WHATSAPP_LIMITS.LIST.ROW_TITLE_MAX_LENGTH} characters or less (currently ${title.length}).`
+              });
             }
             if (desc.length > WHATSAPP_LIMITS.LIST.ROW_DESCRIPTION_MAX_LENGTH) {
-              invalidSteps.push(`Step ${index + 1}, Row ${i + 1}: Description max ${WHATSAPP_LIMITS.LIST.ROW_DESCRIPTION_MAX_LENGTH} characters.`);
+              errors.push({
+                stepIndex: index,
+                buttonIndex: i,
+                message: `Step ${index + 1}, Row ${i + 1}: Description must be ${WHATSAPP_LIMITS.LIST.ROW_DESCRIPTION_MAX_LENGTH} characters or less (currently ${desc.length}).`
+              });
             }
           });
         }
       });
 
-      if (invalidSteps.length > 0) {
-        toast.error(`Please fix the following:\n${invalidSteps.join('\n')}`, { duration: 6000 });
+      if (errors.length > 0) {
+        setValidationErrors(errors);
+        const first = errors[0];
+        toast.error(first.message, { duration: 8000 });
+        if (errors.length > 1) {
+          toast.error(`${errors.length} validation errors. See highlighted fields.`, { duration: 5000, id: 'validation-count' });
+        }
+        // Scroll to first error step
+        const el = document.getElementById(`step-${first.stepIndex}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setSelectedStepIndex(first.stepIndex);
         return;
       }
+      setValidationErrors([]);
 
       setSaving(true);
       
@@ -381,6 +408,7 @@ export default function CreateFlowPage() {
   };
 
   const updateStep = (index: number, field: string, value: any) => {
+    setValidationErrors(prev => prev.filter(e => e.stepIndex !== index));
     const newSteps = [...flow.steps];
     const keys = field.split('.');
     let current = newSteps[index];
@@ -456,6 +484,7 @@ export default function CreateFlowPage() {
   };
 
   const updateButton = (stepIndex: number, buttonIndex: number, field: string, value: any) => {
+    setValidationErrors(prev => prev.filter(e => e.stepIndex !== stepIndex || e.buttonIndex !== buttonIndex));
     const newSteps = [...flow.steps];
     const keys = field.split('.');
     let current = newSteps[stepIndex].content.buttons[buttonIndex];
@@ -1095,11 +1124,13 @@ export default function CreateFlowPage() {
                         key={stepIndex}
                         id={`step-${stepIndex}`}
                         className={`border-2 transition-all cursor-pointer ${
-                          selectedStepIndex === stepIndex 
-                            ? 'border-blue-500 shadow-lg bg-blue-50/30' 
+                          validationErrors.some(e => e.stepIndex === stepIndex)
+                            ? 'border-red-500 bg-red-50/50 shadow-md shadow-red-200'
+                            : selectedStepIndex === stepIndex
+                            ? 'border-blue-500 shadow-lg bg-blue-50/30'
                             : 'border-gray-200 hover:border-purple-300'
                         }`}
-                        onClick={() => setSelectedStepIndex(stepIndex)}
+                        onClick={() => { setSelectedStepIndex(stepIndex); setValidationErrors(prev => prev.filter(e => e.stepIndex !== stepIndex)); }}
                       >
                         <CardHeader className="pb-3">
                           <div className="flex items-center justify-between">
@@ -1637,8 +1668,10 @@ export default function CreateFlowPage() {
                                     : 'No buttons added. Click &quot;Add Button&quot; to create interactive options.'}
                                 </p>
                               )}
-                              {step.content?.buttons?.map((button: any, btnIndex: number) => (
-                                <Card key={btnIndex} className="p-3 bg-gray-50">
+                              {step.content?.buttons?.map((button: any, btnIndex: number) => {
+                                const hasButtonError = validationErrors.some(e => e.stepIndex === stepIndex && e.buttonIndex === btnIndex);
+                                return (
+                                <Card key={btnIndex} className={`p-3 ${hasButtonError ? 'bg-red-50 border-2 border-red-400' : 'bg-gray-50'}`}>
                                   <div className="flex items-center gap-3">
                                     <div className="flex-1 grid grid-cols-2 gap-3">
                                       <div>
@@ -1672,9 +1705,14 @@ export default function CreateFlowPage() {
                                             updateButton(stepIndex, btnIndex, 'text.en', e.target.value.slice(0, max));
                                           }}
                                           onClick={(e) => e.stopPropagation()}
-                                          className="mt-1"
+                                          className={`mt-1 ${hasButtonError ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                                           maxLength={step.type === 'interactive_buttons' ? WHATSAPP_LIMITS.BUTTONS.TITLE_MAX_LENGTH : step.type === 'interactive_list' ? WHATSAPP_LIMITS.LIST.ROW_TITLE_MAX_LENGTH : undefined}
                                         />
+                                        {hasButtonError && (
+                                          <p className="text-xs text-red-600 mt-1 font-medium">
+                                            {validationErrors.find(e => e.stepIndex === stepIndex && e.buttonIndex === btnIndex)?.message}
+                                          </p>
+                                        )}
                                       </div>
                                       {step.type === 'interactive_list' && (
                                         <div className="col-span-2">
@@ -1705,7 +1743,7 @@ export default function CreateFlowPage() {
                                     </Button>
                                   </div>
                                 </Card>
-                              ))}
+                              ); })}
                             </div>
                           )}
 

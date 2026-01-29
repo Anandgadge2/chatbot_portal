@@ -10,7 +10,7 @@ import 'express-async-errors';
 dotenv.config();
 
 // Import configurations
-import { connectDatabase, closeDatabase } from './config/database';
+import { connectDatabase, closeDatabase, isDatabaseConnected } from './config/database';
 import { connectRedis, disconnectRedis } from './config/redis';
 import { logger } from './config/logger'; 
 import { configureCloudinary } from './config/cloudinary';
@@ -44,6 +44,9 @@ import { notFoundHandler } from './middleware/notFoundHandler';
 
 const app: Application = express();
 const PORT = process.env.PORT || 5001;
+
+// Trust proxy (required when behind Vercel/nginx; fixes express-rate-limit X-Forwarded-For validation)
+app.set('trust proxy', 1);
 
 // ================================
 // Middleware
@@ -118,6 +121,20 @@ if (process.env.NODE_ENV === 'development') {
 // ================================
 // Routes
 // ================================
+
+// On Vercel/serverless, ensure DB is connected before any /api route (avoids "users.findOne() buffering timed out")
+let dbReadyPromise: Promise<void> | null = null;
+const ensureDb = async (_req: Request, _res: Response, next: (err?: any) => void) => {
+  try {
+    if (isDatabaseConnected()) return next();
+    if (!dbReadyPromise) dbReadyPromise = connectDatabase();
+    await dbReadyPromise;
+    next();
+  } catch (e: any) {
+    next(e);
+  }
+};
+app.use('/api', ensureDb);
 
 // Health check (basic)
 app.get('/health', (_req: Request, res: Response) => {

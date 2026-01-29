@@ -23,7 +23,7 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
   {
     id: 'zp-amravati-full-flow',
     name: 'ZP Amravati – Full Citizen Services Flow (All-in-One)',
-    description: 'Complete flow: language selection (EN/Hi/Mr/Or), main menu, grievance filing, appointment booking, track status, RTS. Dynamic values (grievanceId, appointmentId, citizen name, status, assigned officer) come from backend/session.',
+    description: 'Complete flow (Meta limits: max 3 buttons, 20 chars each): language selection (EN/Hi/Mr), main menu (Grievance, Appointment, Track), grievance, appointment, track status. Dynamic values from backend/session.',
     icon: <MessageSquare className="w-5 h-5" />,
     triggers: [
       { type: 'keyword', value: 'hi', startStepId: 'language_selection' },
@@ -32,6 +32,7 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
       { type: 'keyword', value: 'menu', startStepId: 'language_selection' }
     ],
     steps: [
+      // Meta: max 3 buttons per message, 20 chars per button title
       {
         stepId: 'language_selection',
         type: 'interactive_buttons',
@@ -42,15 +43,13 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
           buttons: [
             { id: 'lang_en', text: { en: '🇬🇧 English' }, nextStep: 'main_menu_en' },
             { id: 'lang_hi', text: { en: '🇮🇳 हिंदी' }, nextStep: 'main_menu_hi' },
-            { id: 'lang_mr', text: { en: '🇮🇳 मराठी' }, nextStep: 'main_menu_mr' },
-            { id: 'lang_or', text: { en: '🇮🇳 ଓଡ଼ିଆ' }, nextStep: 'main_menu_or' }
+            { id: 'lang_mr', text: { en: '🇮🇳 मराठी' }, nextStep: 'main_menu_mr' }
           ]
         },
         expectedResponses: [
           { type: 'button_click', value: 'lang_en', nextStepId: 'main_menu_en' },
           { type: 'button_click', value: 'lang_hi', nextStepId: 'main_menu_hi' },
-          { type: 'button_click', value: 'lang_mr', nextStepId: 'main_menu_mr' },
-          { type: 'button_click', value: 'lang_or', nextStepId: 'main_menu_or' }
+          { type: 'button_click', value: 'lang_mr', nextStepId: 'main_menu_mr' }
         ],
         nextStep: null
       },
@@ -64,17 +63,13 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
           buttons: [
             { id: 'grievance_en', text: { en: '📝 File Grievance' }, nextStep: 'grievance_start' },
             { id: 'appointment_en', text: { en: '📅 Book Appointment' }, nextStep: 'appointment_start' },
-            { id: 'track_en', text: { en: '🔍 Track Status' }, nextStep: 'track_status' },
-            { id: 'rts_en', text: { en: '📋 RTS Services' }, nextStep: 'rts_service_selection' },
-            { id: 'help_en', text: { en: 'ℹ️ Help' }, nextStep: 'main_menu_en' }
+            { id: 'track_en', text: { en: '🔍 Track Status' }, nextStep: 'track_status' }
           ]
         },
         expectedResponses: [
           { type: 'button_click', value: 'grievance_en', nextStepId: 'grievance_start' },
           { type: 'button_click', value: 'appointment_en', nextStepId: 'appointment_start' },
-          { type: 'button_click', value: 'track_en', nextStepId: 'track_status' },
-          { type: 'button_click', value: 'rts_en', nextStepId: 'rts_service_selection' },
-          { type: 'button_click', value: 'help_en', nextStepId: 'main_menu_en' }
+          { type: 'button_click', value: 'track_en', nextStepId: 'track_status' }
         ],
         nextStep: null
       },
@@ -87,18 +82,14 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
           },
           buttons: [
             { id: 'grievance_hi', text: { en: '📝 शिकायत दर्ज करें' }, nextStep: 'grievance_start' },
-            { id: 'appointment_hi', text: { en: '📅 अपॉइंटमेंट बुक करें' }, nextStep: 'appointment_start' },
-            { id: 'track_hi', text: { en: '🔍 स्थिति ट्रैक करें' }, nextStep: 'track_status' },
-            { id: 'rts_hi', text: { en: '📋 आरटीएस सेवाएं' }, nextStep: 'rts_service_selection' },
-            { id: 'help_hi', text: { en: 'ℹ️ सहायता' }, nextStep: 'main_menu_hi' }
+            { id: 'appointment_hi', text: { en: '📅 अपॉइंटमेंट बुक' }, nextStep: 'appointment_start' },
+            { id: 'track_hi', text: { en: '🔍 स्थिति ट्रैक करें' }, nextStep: 'track_status' }
           ]
         },
         expectedResponses: [
           { type: 'button_click', value: 'grievance_hi', nextStepId: 'grievance_start' },
           { type: 'button_click', value: 'appointment_hi', nextStepId: 'appointment_start' },
-          { type: 'button_click', value: 'track_hi', nextStepId: 'track_status' },
-          { type: 'button_click', value: 'rts_hi', nextStepId: 'rts_service_selection' },
-          { type: 'button_click', value: 'help_hi', nextStepId: 'main_menu_hi' }
+          { type: 'button_click', value: 'track_hi', nextStepId: 'track_status' }
         ],
         nextStep: null
       },
@@ -111,42 +102,14 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
           },
           buttons: [
             { id: 'grievance_mr', text: { en: '📝 तक्रार दाखल करा' }, nextStep: 'grievance_start' },
-            { id: 'appointment_mr', text: { en: '📅 अपॉइंटमेंट बुक करा' }, nextStep: 'appointment_start' },
-            { id: 'track_mr', text: { en: '🔍 स्थिती ट्रॅक करा' }, nextStep: 'track_status' },
-            { id: 'rts_mr', text: { en: '📋 आरटीएस सेवा' }, nextStep: 'rts_service_selection' },
-            { id: 'help_mr', text: { en: 'ℹ️ मदत' }, nextStep: 'main_menu_mr' }
+            { id: 'appointment_mr', text: { en: '📅 अपॉइंट बुक करा' }, nextStep: 'appointment_start' },
+            { id: 'track_mr', text: { en: '🔍 स्थिती ट्रॅक करा' }, nextStep: 'track_status' }
           ]
         },
         expectedResponses: [
           { type: 'button_click', value: 'grievance_mr', nextStepId: 'grievance_start' },
           { type: 'button_click', value: 'appointment_mr', nextStepId: 'appointment_start' },
-          { type: 'button_click', value: 'track_mr', nextStepId: 'track_status' },
-          { type: 'button_click', value: 'rts_mr', nextStepId: 'rts_service_selection' },
-          { type: 'button_click', value: 'help_mr', nextStepId: 'main_menu_mr' }
-        ],
-        nextStep: null
-      },
-      {
-        stepId: 'main_menu_or',
-        type: 'interactive_buttons',
-        content: {
-          text: {
-            en: '🏛️ *ନାଗରିକ ସେବା ମେନୁ*\n\nଜିଲ୍ଲା ପରିଷଦ ଅମରାବତୀ ଡିଜିଟାଲ୍ ହେଲ୍ପଡେସ୍କରେ ସ୍ୱାଗତ।\n\n👇 *ଦୟାକରି ଏକ ସେବା ବାଛନ୍ତୁ:*'
-          },
-          buttons: [
-            { id: 'grievance_or', text: { en: '📝 ଅଭିଯୋଗ ଦାଖଲ କରନ୍ତୁ' }, nextStep: 'grievance_start' },
-            { id: 'appointment_or', text: { en: '📅 ନିଯୁକ୍ତି ବୁକ୍ କରନ୍ତୁ' }, nextStep: 'appointment_start' },
-            { id: 'track_or', text: { en: '🔍 ସ୍ଥିତି ଟ୍ରାକ୍ କରନ୍ତୁ' }, nextStep: 'track_status' },
-            { id: 'rts_or', text: { en: '📋 ଆରଟିଏସ ସେବା' }, nextStep: 'rts_service_selection' },
-            { id: 'help_or', text: { en: 'ℹ️ ସାହାଯ୍ୟ' }, nextStep: 'main_menu_or' }
-          ]
-        },
-        expectedResponses: [
-          { type: 'button_click', value: 'grievance_or', nextStepId: 'grievance_start' },
-          { type: 'button_click', value: 'appointment_or', nextStepId: 'appointment_start' },
-          { type: 'button_click', value: 'track_or', nextStepId: 'track_status' },
-          { type: 'button_click', value: 'rts_or', nextStepId: 'rts_service_selection' },
-          { type: 'button_click', value: 'help_or', nextStepId: 'main_menu_or' }
+          { type: 'button_click', value: 'track_mr', nextStepId: 'track_status' }
         ],
         nextStep: null
       },
