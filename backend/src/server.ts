@@ -55,19 +55,31 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" } // Allow cross-origin requests from WhatsApp
 }));
 
-// CORS - In production restrict to frontend URL when set
+// CORS - Development: allow all origins (localhost). Production: FRONTEND_URL + default Vercel frontend.
+const DEFAULT_FRONTEND_ORIGIN = 'https://chatbot-portal-frontend.vercel.app';
+const DEV_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001', 'http://127.0.0.1:3001'];
 const frontendUrl = process.env.FRONTEND_URL;
+const isProduction = process.env.NODE_ENV === 'production';
+const allowedOrigins = [
+  ...(frontendUrl ? frontendUrl.split(',').map(u => u.trim()).filter(Boolean) : []),
+  ...(isProduction ? [DEFAULT_FRONTEND_ORIGIN] : DEV_ORIGINS)
+];
+const normalizeOrigin = (o: string) => (o || '').replace(/\/+$/, '');
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' && frontendUrl
-    ? (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
-        if (!origin || frontendUrl.split(',').map(u => u.trim()).some(allowed => origin === allowed || origin.startsWith(allowed))) {
+  origin: !isProduction
+    ? true
+    : (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
+        if (!origin) {
           cb(null, true);
-        } else {
-          cb(null, false);
+          return;
         }
-      }
-    : true,
-  credentials: true
+        const normalized = normalizeOrigin(origin);
+        const allowed = allowedOrigins.some(allowed => normalizeOrigin(allowed) === normalized || normalized.startsWith(normalizeOrigin(allowed)));
+        cb(null, allowed);
+      },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
