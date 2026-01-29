@@ -26,6 +26,7 @@ export default function ViewFlowPage() {
       return;
     }
     fetchFlow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run when flowId/role change only
   }, [user, flowId]);
 
   const fetchFlow = async () => {
@@ -115,7 +116,7 @@ export default function ViewFlowPage() {
                     flow.triggers && flow.triggers.length > 0
                       ? flow.triggers.map((t: any, idx: number) => (
                           <span key={idx}>
-                            {t.triggerType}: "{t.triggerValue}"{idx < flow.triggers.length - 1 ? ', ' : ''}
+                            {t.triggerType}: &quot;{t.triggerValue}&quot;{idx < flow.triggers.length - 1 ? ', ' : ''}
                           </span>
                         ))
                       : flow.trigger?.type ? `${flow.trigger.type} → ${flow.trigger.value}` : 'N/A'

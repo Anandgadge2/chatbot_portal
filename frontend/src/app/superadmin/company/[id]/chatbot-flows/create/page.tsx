@@ -72,6 +72,7 @@ export default function CreateFlowPage() {
     if (editFlowId && user?.role === 'SUPER_ADMIN') {
       loadFlowForEdit();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run when editFlowId/role change only
   }, [editFlowId, user]);
 
   const loadFlowForEdit = async () => {
@@ -857,7 +858,7 @@ export default function CreateFlowPage() {
                   </div>
                   
                   <p className="text-xs text-gray-500 mb-3">
-                    Define when this flow should be activated. You can add multiple triggers (e.g., "hi", "hello", or button clicks like "lang_en", "lang_hi").
+                    Define when this flow should be activated. You can add multiple triggers (e.g., &quot;hi&quot;, &quot;hello&quot;, or button clicks like &quot;lang_en&quot;, &quot;lang_hi&quot;).
                   </p>
 
                   {flow.triggers.map((trigger: any, index: number) => (
@@ -1070,7 +1071,7 @@ export default function CreateFlowPage() {
                   <div className="text-center py-12 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
                     <MessageSquare className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                     <p className="font-semibold mb-1">No steps added yet</p>
-                    <p className="text-sm mb-4">Click "Add Step" to start building your flow</p>
+                    <p className="text-sm mb-4">Click &quot;Add Step&quot; to start building your flow</p>
                     <Button onClick={addStep} variant="outline" size="sm">
                       <Plus className="w-4 h-4 mr-2" />
                       Add First Step
@@ -1174,7 +1175,7 @@ export default function CreateFlowPage() {
                             {step.stepId === 'grievance_category' && (
                               <div className="p-2 bg-green-50 border border-green-200 rounded-lg mt-1">
                                 <p className="text-[10px] text-green-800">
-                                  <strong>💡 Auto-Load Departments:</strong> This step will automatically load departments from your company's database when executed. Keep step type as "Message" for this to work.
+                                  <strong>💡 Auto-Load Departments:</strong> This step will automatically load departments from your company&apos;s database when executed. Keep step type as &quot;Message&quot; for this to work.
                                 </p>
                               </div>
                             )}
@@ -1428,7 +1429,7 @@ export default function CreateFlowPage() {
                             <div className="space-y-3 pt-2 border-t border-gray-200">
                               <Label className="text-xs font-semibold">🗓️ Availability Configuration</Label>
                               <p className="text-xs text-gray-500 italic">
-                                Buttons will be generated dynamically from company admin's availability settings.
+                                Buttons will be generated dynamically from company admin&apos;s availability settings.
                               </p>
                               
                               <div className="space-y-2">
@@ -1619,7 +1620,7 @@ export default function CreateFlowPage() {
                               </div>
                               {step.type === 'collect_input' && (
                                 <p className="text-xs text-gray-500 italic">
-                                  Add buttons like "Back" or "Cancel" to allow users to navigate or exit the input step.
+                                  Add buttons like &quot;Back&quot; or &quot;Cancel&quot; to allow users to navigate or exit the input step.
                                 </p>
                               )}
                               {step.type === 'interactive_list' && (
@@ -1632,8 +1633,8 @@ export default function CreateFlowPage() {
                                   {step.type === 'collect_input' 
                                     ? 'No buttons added. Users will only be able to type text input.'
                                     : step.type === 'interactive_list'
-                                    ? 'No list items. Click "Add Button" to add rows.'
-                                    : 'No buttons added. Click "Add Button" to create interactive options.'}
+                                    ? 'No list items. Click &quot;Add Button&quot; to add rows.'
+                                    : 'No buttons added. Click &quot;Add Button&quot; to create interactive options.'}
                                 </p>
                               )}
                               {step.content?.buttons?.map((button: any, btnIndex: number) => (
@@ -1883,7 +1884,7 @@ export default function CreateFlowPage() {
                                         />
                                       )}
                                       <p className="text-[10px] text-gray-500">
-                                        Which step to go to when user provides this response. Leave empty to use step's default next step.
+                                        Which step to go to when user provides this response. Leave empty to use step&apos;s default next step.
                                       </p>
                                     </div>
                                   </div>

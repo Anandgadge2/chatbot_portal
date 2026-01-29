@@ -44,6 +44,7 @@ export default function WhatsAppConfigPage() {
       return;
     }
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run when companyId/role change only
   }, [companyId, user]);
 
   const fetchData = async () => {

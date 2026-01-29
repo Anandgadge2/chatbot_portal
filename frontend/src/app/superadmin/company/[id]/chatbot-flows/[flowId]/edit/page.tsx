@@ -26,6 +26,7 @@ export default function EditFlowPage() {
     
     // Load flow and redirect to create page with flow data
     loadFlowAndRedirect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when ids/role change
   }, [user, companyId, flowId, router]);
 
   const loadFlowAndRedirect = async () => {

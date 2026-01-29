@@ -1457,12 +1457,13 @@ async function continueGrievanceFlow(
       const hasMedia = message.mediaUrl && (message.messageType === 'image' || message.messageType === 'document');
 
       if (hasMedia) {
+        const mediaUrl = message.mediaUrl;
         const accessToken = company?.whatsappConfig?.accessToken;
-        if (!accessToken) {
-          throw new Error('WhatsApp access token missing for company (cannot download media)');
+        if (!mediaUrl || !accessToken) {
+          throw new Error('WhatsApp access token or media URL missing for company (cannot download media)');
         }
         const folder = (company?.name || company?._id?.toString() || 'chatbot').replace(/\s+/g, '_');
-        const cloudinaryUrl = await uploadWhatsAppMediaToCloudinary(message.mediaUrl, accessToken as string, folder);
+        const cloudinaryUrl = await uploadWhatsAppMediaToCloudinary(mediaUrl, accessToken, folder);
         session.data.media = [{
           url: cloudinaryUrl || message.mediaUrl,
           type: message.messageType,

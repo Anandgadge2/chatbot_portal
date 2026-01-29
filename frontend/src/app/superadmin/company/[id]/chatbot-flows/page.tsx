@@ -36,6 +36,7 @@ export default function ChatbotFlowsPage() {
       return;
     }
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run when companyId/role change only
   }, [companyId, user]);
 
   const fetchData = async () => {
@@ -698,14 +699,14 @@ export default function ChatbotFlowsPage() {
                         {flow.triggers && flow.triggers.length > 0
                           ? flow.triggers.map((t: any, idx: number) => (
                               <span key={idx} className="inline-block px-2 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium mr-1">
-                                {t.triggerType}: "{t.triggerValue}"
+                                {t.triggerType}: &quot;{t.triggerValue}&quot;
                               </span>
                             ))
                           : flow.trigger?.type || 'message'
                         }
                         {flow.trigger?.value && !flow.triggers && (
                           <span className="inline-block px-2 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium ml-1">
-                            → "{flow.trigger.value}"
+                            → &quot;{flow.trigger.value}&quot;
                           </span>
                         )}
                         {flow.triggers && flow.triggers.length > 0 && (
@@ -813,7 +814,7 @@ export default function ChatbotFlowsPage() {
 
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}
-        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
         onConfirm={confirmDialog.onConfirm}
         title={confirmDialog.title}
         message={confirmDialog.message}
