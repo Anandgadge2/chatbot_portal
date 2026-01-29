@@ -55,6 +55,7 @@ export default function SuperAdminDashboard() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDepartmentDialog, setShowDepartmentDialog] = useState(false);
   const [showUserDialog, setShowUserDialog] = useState(false);
+  const [userRoleFilter, setUserRoleFilter] = useState<string>('');
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -118,31 +119,41 @@ export default function SuperAdminDashboard() {
   };
 
   const fetchStats = async () => {
+    // Fetch each stat independently so one 403/failure doesn't block others (e.g. Users tab still loads)
+    let companies: Company[] = [];
+    let usersList: User[] = [];
+    let departmentsList: Department[] = [];
     try {
-      // Get real-time stats from database
       const companiesResponse = await companyAPI.getAll();
-      const usersResponse = await userAPI.getAll();
-      const departmentsResponse = await departmentAPI.getAll();
-
-      const companies = companiesResponse.success ? companiesResponse.data.companies : [];
-      const users = usersResponse.success ? usersResponse.data.users : [];
-      const departments = departmentsResponse.success ? departmentsResponse.data.departments : [];
-
-      const activeCompanies = companies.filter(c => c.isActive).length;
-      const activeUsers = users.filter(u => u.isActive).length;
-
-      setStats({
-        companies: companies.length,
-        users: users.length,
-        departments: departments.length,
-        activeCompanies,
-        activeUsers,
-        totalSessions: Math.floor(Math.random() * 100) + 50, // Mock data for now
-        systemStatus: 'operational'
-      });
-    } catch (error: any) {
-      console.error('Failed to fetch stats:', error);
+      if (companiesResponse.success) companies = companiesResponse.data.companies;
+    } catch (e) {
+      console.warn('Stats: companies fetch failed', e);
     }
+    try {
+      const usersResponse = await userAPI.getAll();
+      if (usersResponse.success) usersList = usersResponse.data.users;
+    } catch (e) {
+      console.warn('Stats: users fetch failed', e);
+    }
+    try {
+      const departmentsResponse = await departmentAPI.getAll();
+      if (departmentsResponse.success) departmentsList = departmentsResponse.data.departments;
+    } catch (e) {
+      console.warn('Stats: departments fetch failed', e);
+    }
+
+    const activeCompanies = companies.filter(c => c.isActive).length;
+    const activeUsers = usersList.filter(u => u.isActive).length;
+
+    setStats({
+      companies: companies.length,
+      users: usersList.length,
+      departments: departmentsList.length,
+      activeCompanies,
+      activeUsers,
+      totalSessions: Math.floor(Math.random() * 100) + 50, // Mock data for now
+      systemStatus: 'operational'
+    });
   };
 
   const fetchAnalytics = async () => {
@@ -734,7 +745,29 @@ export default function SuperAdminDashboard() {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
+                <div className="p-4 border-b border-emerald-100 flex items-center gap-4">
+                  <label className="text-sm font-medium text-emerald-800">Filter by role:</label>
+                  <select
+                    value={userRoleFilter}
+                    onChange={(e) => setUserRoleFilter(e.target.value)}
+                    className="rounded-lg border border-emerald-200 px-3 py-2 text-sm bg-white"
+                  >
+                    <option value="">All users</option>
+                    <option value="COMPANY_ADMIN">Company Admin only</option>
+                    <option value="SUPER_ADMIN">Super Admin only</option>
+                    <option value="DEPARTMENT_ADMIN">Department Admin only</option>
+                    <option value="OPERATOR">Operator only</option>
+                  </select>
+                </div>
                 <div className="overflow-hidden">
+                  {(() => {
+                    const filtered = userRoleFilter ? users.filter(u => u.role === userRoleFilter) : users;
+                    return filtered.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500">
+                      <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <p>{userRoleFilter ? `No users with role ${userRoleFilter}.` : 'No users yet. Add users or ensure you have Company Admins and other roles.'}</p>
+                    </div>
+                  ) : (
                   <table className="w-full">
                     <thead className="bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 border-b border-emerald-100">
                       <tr>
@@ -742,45 +775,58 @@ export default function SuperAdminDashboard() {
                         <th className="px-6 py-4 text-left text-xs font-bold text-emerald-700 uppercase tracking-wider">User</th>
                         <th className="px-6 py-4 text-left text-xs font-bold text-emerald-700 uppercase tracking-wider">Email</th>
                         <th className="px-6 py-4 text-left text-xs font-bold text-emerald-700 uppercase tracking-wider">Role</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-emerald-700 uppercase tracking-wider">Company</th>
                         <th className="px-6 py-4 text-left text-xs font-bold text-emerald-700 uppercase tracking-wider">Status</th>
                         <th className="px-6 py-4 text-left text-xs font-bold text-emerald-700 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-slate-100">
-                      <tr className="hover:bg-gradient-to-r hover:from-emerald-50/50 hover:to-cyan-50/50 transition-all duration-200">
+                      {filtered.map((u, idx) => (
+                      <tr key={u._id} className="hover:bg-gradient-to-r hover:from-emerald-50/50 hover:to-cyan-50/50 transition-all duration-200">
                         <td className="px-3 py-4 text-center">
                           <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">
-                            1
+                            {idx + 1}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 bg-yellow-500 rounded-full flex items-center justify-center text-white font-semibold">
-                              {user.firstName[0]}{user.lastName[0]}
+                            <div className="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold bg-gradient-to-br from-emerald-500 to-teal-600">
+                              {(u.firstName?.[0] || '')}{(u.lastName?.[0] || '')}
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</div>
-                              <div className="text-sm text-gray-500">{user.userId}</div>
+                              <div className="text-sm font-medium text-gray-900">{u.firstName} {u.lastName}</div>
+                              <div className="text-sm text-gray-500">{u.userId || u._id}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.email}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{u.email}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                            {user.role}
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            u.role === 'SUPER_ADMIN' ? 'bg-yellow-100 text-yellow-800' :
+                            u.role === 'COMPANY_ADMIN' ? 'bg-blue-100 text-blue-800' :
+                            u.role === 'DEPARTMENT_ADMIN' ? 'bg-purple-100 text-purple-800' :
+                            'bg-slate-100 text-slate-800'
+                          }`}>
+                            {u.role}
                           </span>
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {typeof u.companyId === 'object' && u.companyId?.name ? u.companyId.name : (u.companyId ? String(u.companyId) : '—')}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            Active
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${u.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {u.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-900">Edit</Button>
                         </td>
                       </tr>
+                      ))}
                     </tbody>
                   </table>
+                  );
+                  })()}
                 </div>
               </CardContent>
             </Card>

@@ -205,19 +205,28 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
       },
       {
         stepId: 'appointment_date',
-        type: 'collect_input',
+        type: 'dynamic_availability',
         content: {
-          text: { en: '📅 *Preferred Date*\n\nPlease type your preferred date (YYYY-MM-DD):' },
-          inputConfig: { inputType: 'date', saveToField: 'appointmentDate', validation: { required: true } }
+          text: { en: '📅 *Preferred Date*\n\nSelect a date from the company&apos;s available slots:' },
+          availabilityConfig: {
+            type: 'date',
+            saveToField: 'appointmentDate',
+            dateRange: { startDays: 0, endDays: 30 },
+            departmentId: null
+          }
         },
         nextStep: 'appointment_time'
       },
       {
         stepId: 'appointment_time',
-        type: 'collect_input',
+        type: 'dynamic_availability',
         content: {
-          text: { en: '⏰ *Preferred Time*\n\nPlease type your preferred time (e.g., 10:30 AM):' },
-          inputConfig: { inputType: 'text', saveToField: 'appointmentTime', validation: { required: true, minLength: 3, maxLength: 50 } }
+          text: { en: '⏰ *Preferred Time*\n\nSelect a time slot from the available options:' },
+          availabilityConfig: {
+            type: 'time',
+            saveToField: 'appointmentTime',
+            departmentId: null
+          }
         },
         nextStep: 'appointment_confirm'
       },
@@ -489,26 +498,27 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
       },
       {
         stepId: 'appointment_date',
-        type: 'collect_input',
+        type: 'dynamic_availability',
         content: {
-          text: { en: '📅 *Preferred Date*\n\nPlease type your preferred date (YYYY-MM-DD):' },
-          inputConfig: {
-            inputType: 'date',
+          text: { en: '📅 *Preferred Date*\n\nSelect a date from the company&apos;s available slots:' },
+          availabilityConfig: {
+            type: 'date',
             saveToField: 'appointmentDate',
-            validation: { required: true }
+            dateRange: { startDays: 0, endDays: 30 },
+            departmentId: null
           }
         },
         nextStep: 'appointment_time'
       },
       {
         stepId: 'appointment_time',
-        type: 'collect_input',
+        type: 'dynamic_availability',
         content: {
-          text: { en: '⏰ *Preferred Time*\n\nPlease type your preferred time (e.g., 10:30 AM):' },
-          inputConfig: {
-            inputType: 'text',
+          text: { en: '⏰ *Preferred Time*\n\nSelect a time slot from the available options:' },
+          availabilityConfig: {
+            type: 'time',
             saveToField: 'appointmentTime',
-            validation: { required: true, minLength: 3, maxLength: 50 }
+            departmentId: null
           }
         },
         nextStep: 'appointment_confirm'

@@ -2,14 +2,19 @@ import { Router, Request, Response } from 'express';
 import AppointmentAvailability, { IAppointmentAvailability, ISpecialDate } from '../models/AppointmentAvailability';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../config/logger';
+import { UserRole } from '../config/constants';
 
 const router = Router();
 
 // Get availability settings for a company/department
 router.get('/', authenticate, async (req: Request, res: Response) => {
   try {
-    const { departmentId } = req.query;
-    const companyId = req.user?.companyId;
+    const { departmentId, companyId: queryCompanyId } = req.query;
+    // Super Admin may pass companyId in query; others use their own companyId
+    const companyId =
+      (req.user?.role === UserRole.SUPER_ADMIN && typeof queryCompanyId === 'string' && queryCompanyId)
+        ? queryCompanyId
+        : req.user?.companyId;
 
     if (!companyId) {
       return res.status(400).json({ success: false, message: 'Company ID is required' });

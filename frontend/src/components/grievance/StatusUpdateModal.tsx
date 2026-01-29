@@ -12,13 +12,20 @@ interface StatusUpdateModalProps {
   itemType: 'grievance' | 'appointment';
   currentStatus: string;
   onSuccess: () => void;
+  /** For grievance only: 'operator' = 2 buttons (Resolved, Rejected); 'department-admin' = 4 buttons (Pending, Assigned, Resolved, Rejected) */
+  grievanceVariant?: 'operator' | 'department-admin';
 }
 
-const grievanceStatuses = [
+const grievanceStatusesAll = [
   { value: 'PENDING', label: 'Pending', color: 'yellow', icon: '⏳' },
   { value: 'ASSIGNED', label: 'Assigned', color: 'blue', icon: '👤' },
   { value: 'RESOLVED', label: 'Resolved', color: 'green', icon: '✅' },
-  { value: 'CANCELLED', label: 'Cancelled', color: 'red', icon: '❌' }
+  { value: 'REJECTED', label: 'Rejected', color: 'red', icon: '❌' }
+];
+
+const grievanceStatusesOperator = [
+  { value: 'RESOLVED', label: 'Resolved', color: 'green', icon: '✅' },
+  { value: 'REJECTED', label: 'Rejected', color: 'red', icon: '❌' }
 ];
 
 const appointmentStatuses = [
@@ -34,12 +41,17 @@ export default function StatusUpdateModal({
   itemId,
   itemType,
   currentStatus,
-  onSuccess
+  onSuccess,
+  grievanceVariant
 }: StatusUpdateModalProps) {
   const [selectedStatus, setSelectedStatus] = useState(currentStatus);
   const [remarks, setRemarks] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const grievanceStatuses =
+    itemType === 'grievance' && grievanceVariant === 'operator'
+      ? grievanceStatusesOperator
+      : grievanceStatusesAll;
   const statuses = itemType === 'grievance' ? grievanceStatuses : appointmentStatuses;
 
   // Reset state when modal opens/closes or currentStatus changes

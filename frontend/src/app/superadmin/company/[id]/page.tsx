@@ -1374,6 +1374,7 @@ export default function CompanyDrillDown() {
         onSuccess={() => {
           fetchData();
         }}
+        grievanceVariant="department-admin"
       />
     </div>
   );

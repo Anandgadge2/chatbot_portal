@@ -693,13 +693,14 @@ export class DynamicFlowEngine {
     try {
       const { method, endpoint, headers, body, saveResponseTo, nextStepId } = step.apiConfig;
 
-      // Build URL with query parameters for GET requests
-      let url = endpoint;
+      // Build URL with query parameters for GET requests (replace placeholders in body values e.g. {appointmentDate})
+      let url = this.replacePlaceholders(endpoint);
       if (method === 'GET' && body) {
         const queryParams = new URLSearchParams();
         Object.keys(body).forEach(key => {
           if (body[key] !== null && body[key] !== undefined) {
-            queryParams.append(key, body[key].toString());
+            const value = typeof body[key] === 'string' ? this.replacePlaceholders(body[key]) : body[key].toString();
+            queryParams.append(key, value);
           }
         });
         if (queryParams.toString()) {
@@ -749,7 +750,11 @@ export class DynamicFlowEngine {
 
       // Replace placeholders in URL (e.g., {companyId})
       url = this.replacePlaceholders(url);
-      
+      // Node fetch needs absolute URL for same-server API calls
+      if (url.startsWith('/')) {
+        const base = process.env.API_BASE_URL || process.env.BASE_URL || `http://localhost:${process.env.PORT || 5001}`;
+        url = base.replace(/\/$/, '') + url;
+      }
       console.log(`🌐 Making API call: ${method} ${url}`);
       const response = await fetchFn(url, options);
       const data = await response.json();
@@ -775,8 +780,9 @@ export class DynamicFlowEngine {
             const message = this.replacePlaceholders(step.messageText || '📅 Please select a date:');
             await sendWhatsAppButtons(this.company, this.userPhone, message, buttons);
             
-            // Save date mapping to session
+            // Save date mapping and next step so chatbot can advance on button click
             this.session.data.currentStepId = step.stepId;
+            this.session.data.availabilityNextStepId = nextStepId || null;
             this.session.data.dateMapping = {};
             dates.forEach((date: any) => {
               this.session.data.dateMapping[`date_${date.date}`] = date.date;
@@ -798,8 +804,9 @@ export class DynamicFlowEngine {
             const message = this.replacePlaceholders(step.messageText || '⏰ Please select a time:');
             await sendWhatsAppButtons(this.company, this.userPhone, message, buttons);
             
-            // Save time mapping to session
+            // Save time mapping and next step so chatbot can advance on button click
             this.session.data.currentStepId = step.stepId;
+            this.session.data.availabilityNextStepId = nextStepId || null;
             this.session.data.timeMapping = {};
             timeSlots.forEach((slot: any) => {
               this.session.data.timeMapping[`time_${slot.time}`] = slot.time;
@@ -983,12 +990,12 @@ export class DynamicFlowEngine {
         purpose: this.session.data.purpose,
         appointmentDate,
         appointmentTime: this.session.data.appointmentTime,
-        status: AppointmentStatus.REQUESTED
+        status: AppointmentStatus.SCHEDULED
       };
       const appointment = new Appointment(appointmentData);
       await appointment.save();
       this.session.data.appointmentId = appointment.appointmentId;
-      this.session.data.status = 'Pending Approval';
+      this.session.data.status = 'Scheduled';
       await updateSession(this.session);
       await notifyDepartmentAdminOnCreation({
         type: 'appointment',

@@ -695,6 +695,7 @@ export default function DepartmentDetail() {
         onSuccess={() => {
           fetchData();
         }}
+        grievanceVariant="department-admin"
       />
     </div>
   );

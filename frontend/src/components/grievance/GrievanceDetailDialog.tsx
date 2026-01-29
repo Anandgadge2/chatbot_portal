@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Grievance } from '@/lib/api/grievance';
@@ -22,10 +22,23 @@ import {
   ExternalLink,
   Image as ImageIcon,
   UserCheck,
-  ArrowRight
+  ArrowRight,
+  FileType
 } from 'lucide-react';
 import Image from 'next/image';
 
+// Helper: treat as image if type is image or URL looks like an image
+const isImageMedia = (media: { type?: string; url?: string }) =>
+  media.type === 'image' || /\.(jpe?g|png|gif|webp|bmp)(\?|$)/i.test(media.url || '') || (media.url && media.url.includes('image'));
+
+// Helper: label for documents (PDF, Word, etc.)
+const getDocumentLabel = (url: string) => {
+  if (!url) return 'Document';
+  const lower = url.toLowerCase();
+  if (lower.includes('.pdf') || lower.includes('pdf')) return 'PDF';
+  if (lower.includes('.doc') || lower.includes('word')) return 'Word';
+  return 'Document';
+};
 
 interface GrievanceDetailDialogProps {
   isOpen: boolean;
@@ -34,6 +47,8 @@ interface GrievanceDetailDialogProps {
 }
 
 const GrievanceDetailDialog: React.FC<GrievanceDetailDialogProps> = ({ isOpen, grievance, onClose }) => {
+  const [fullScreenMedia, setFullScreenMedia] = useState<{ url: string; alt?: string } | null>(null);
+
   if (!isOpen || !grievance) return null;
 
   const getStatusConfig = (status: string) => {
@@ -55,6 +70,15 @@ const GrievanceDetailDialog: React.FC<GrievanceDetailDialogProps> = ({ isOpen, g
           icon: <CheckCircle2 className="w-4 h-4" />,
           label: 'Closed',
           gradient: 'from-slate-500 to-gray-600'
+        };
+      case 'REJECTED':
+        return { 
+          bg: 'bg-rose-100', 
+          text: 'text-rose-700', 
+          border: 'border-rose-200',
+          icon: <AlertCircle className="w-4 h-4" />,
+          label: 'Rejected',
+          gradient: 'from-rose-500 to-red-600'
         };
       case 'IN_PROGRESS':
       case 'ASSIGNED':
@@ -315,27 +339,73 @@ const GrievanceDetailDialog: React.FC<GrievanceDetailDialogProps> = ({ isOpen, g
               </div>
               <div className="p-5">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {grievance.media.map((media: any, index: number) => (
-                    <div key={index} className="relative group rounded-xl overflow-hidden border border-slate-200 aspect-video">
-                      {media.type === 'image' || media.url?.includes('image') ? (
-                        <>
-                          <Image
-                            src={media.url}
-                            alt={`Upload ${index + 1}`}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                        </>
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex flex-col items-center justify-center">
-                          <FileText className="w-8 h-8 text-slate-400 mb-2" />
-                          <span className="text-xs text-slate-500">Document</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  {grievance.media.map((media: any, index: number) => {
+                    const isImage = isImageMedia(media);
+                    return (
+                      <div key={index} className="relative group rounded-xl overflow-hidden border border-slate-200 aspect-video">
+                        {isImage ? (
+                          <button
+                            type="button"
+                            onClick={() => setFullScreenMedia({ url: media.url, alt: `Upload ${index + 1}` })}
+                            className="absolute inset-0 w-full h-full text-left focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-inset rounded-xl"
+                          >
+                            <Image
+                              src={media.url}
+                              alt={`Upload ${index + 1}`}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
+                              unoptimized={!media.url?.includes('cloudinary')}
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                              <span className="opacity-0 group-hover:opacity-100 text-white text-sm font-medium bg-black/50 px-3 py-1.5 rounded-lg transition-opacity">
+                                Click to view full screen
+                              </span>
+                            </div>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => media.url && window.open(media.url, '_blank', 'noopener,noreferrer')}
+                            className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex flex-col items-center justify-center hover:from-slate-200 hover:to-slate-300 transition-colors cursor-pointer border-0"
+                          >
+                            <FileType className="w-10 h-10 text-slate-500 mb-2" />
+                            <span className="text-sm font-medium text-slate-600">{getDocumentLabel(media.url || '')}</span>
+                            <span className="text-xs text-slate-400 mt-0.5">Click to open</span>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Full-screen image overlay */}
+          {fullScreenMedia && (
+            <div
+              className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
+              onClick={() => setFullScreenMedia(null)}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Media full screen view"
+            >
+              <button
+                type="button"
+                onClick={() => setFullScreenMedia(null)}
+                className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+                aria-label="Close full screen"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <div className="relative w-full h-full min-h-[50vh]" onClick={(e) => e.stopPropagation()}>
+                <Image
+                  src={fullScreenMedia.url}
+                  alt={fullScreenMedia.alt || 'Full size'}
+                  fill
+                  className="object-contain"
+                  unoptimized
+                />
               </div>
             </div>
           )}
@@ -393,7 +463,7 @@ const GrievanceDetailDialog: React.FC<GrievanceDetailDialogProps> = ({ isOpen, g
                         description = `Assigned to ${event.details?.toUserName || 'an officer'}`;
                         break;
                       case 'STATUS_UPDATED':
-                        const isResolved = event.details?.toStatus === 'RESOLVED' || event.details?.toStatus === 'CLOSED';
+                        const isResolved = event.details?.toStatus === 'RESOLVED' || event.details?.toStatus === 'CLOSED' || event.details?.toStatus === 'REJECTED';
                         iconBg = isResolved ? 'bg-emerald-500' : 'bg-blue-500';
                         cardBg = isResolved ? 'from-emerald-50 to-green-50' : 'from-blue-50 to-indigo-50';
                         borderColor = isResolved ? 'border-emerald-100' : 'border-blue-100';

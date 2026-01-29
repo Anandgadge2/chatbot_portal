@@ -291,23 +291,22 @@ router.post('/', authenticate, requireSuperAdmin, async (req: Request, res: Resp
         };
       }
       
-      // Add availability config as api_call config
+      // Add availability config as api_call config (body must match /api/availability/chatbot/:companyId query: daysAhead, selectedDate, departmentId)
       if (step.content?.availabilityConfig && step.content.availabilityConfig.saveToField) {
+        const av = step.content.availabilityConfig;
+        const type = av.type || 'date';
+        const dateRange = av.dateRange || { startDays: 0, endDays: 30 };
+        const departmentId = av.departmentId ?? null;
+        const body: Record<string, string | number | null> =
+          type === 'time'
+            ? { selectedDate: '{appointmentDate}', departmentId: departmentId ? String(departmentId) : null }
+            : { daysAhead: String(dateRange.endDays ?? 30), departmentId: departmentId ? String(departmentId) : null };
         transformedStep.apiConfig = {
           method: 'GET',
           endpoint: `/api/availability/chatbot/${companyId}`,
           headers: {},
-          body: {
-            type: step.content.availabilityConfig.type || 'date',
-            dateRange: step.content.availabilityConfig.dateRange || { startDays: 0, endDays: 30 },
-            timeSlots: step.content.availabilityConfig.timeSlots || {
-              showMorning: true,
-              showAfternoon: true,
-              showEvening: false
-            },
-            departmentId: step.content.availabilityConfig.departmentId || null
-          },
-          saveResponseTo: step.content.availabilityConfig.saveToField || '',
+          body,
+          saveResponseTo: av.saveToField || '',
           nextStepId: step.nextStep || null
         };
       }
@@ -602,23 +601,22 @@ router.put('/:id', authenticate, requireSuperAdmin, async (req: Request, res: Re
           };
         }
         
-        // Add availability config as api_call config
+        // Add availability config as api_call config (body must match /api/availability/chatbot/:companyId query)
         if (step.content?.availabilityConfig && step.content.availabilityConfig.saveToField) {
+          const av = step.content.availabilityConfig;
+          const type = av.type || 'date';
+          const dateRange = av.dateRange || { startDays: 0, endDays: 30 };
+          const departmentId = av.departmentId ?? null;
+          const body: Record<string, string | number | null> =
+            type === 'time'
+              ? { selectedDate: '{appointmentDate}', departmentId: departmentId ? String(departmentId) : null }
+              : { daysAhead: String(dateRange.endDays ?? 30), departmentId: departmentId ? String(departmentId) : null };
           transformedStep.apiConfig = {
             method: 'GET',
             endpoint: `/api/availability/chatbot/${flow.companyId}`,
             headers: {},
-            body: {
-              type: step.content.availabilityConfig.type || 'date',
-              dateRange: step.content.availabilityConfig.dateRange || { startDays: 0, endDays: 30 },
-              timeSlots: step.content.availabilityConfig.timeSlots || {
-                showMorning: true,
-                showAfternoon: true,
-                showEvening: false
-              },
-              departmentId: step.content.availabilityConfig.departmentId || null
-            },
-            saveResponseTo: step.content.availabilityConfig.saveToField || '',
+            body,
+            saveResponseTo: av.saveToField || '',
             nextStepId: step.nextStep || null
           };
         }

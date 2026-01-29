@@ -92,12 +92,12 @@ router.put('/grievance/:id', requirePermission(Permission.STATUS_CHANGE_GRIEVANC
       });
     }
 
-    // Prevent updates to resolved/closed grievances (frozen) - except for super admin
+    // Prevent updates to resolved/rejected grievances (frozen) - except for super admin
     const oldStatus = grievance.status;
-    if (oldStatus === 'RESOLVED' && currentUser.role !== UserRole.SUPER_ADMIN) {
+    if ((oldStatus === GrievanceStatus.RESOLVED || oldStatus === GrievanceStatus.REJECTED) && currentUser.role !== UserRole.SUPER_ADMIN) {
       return res.status(403).json({
         success: false,
-        message: 'Cannot update a resolved or closed grievance. Grievance is frozen.'
+        message: 'Cannot update a resolved or rejected grievance. Grievance is frozen.'
       });
     }
 
@@ -192,6 +192,20 @@ router.put('/grievance/:id', requirePermission(Permission.STATUS_CHANGE_GRIEVANC
         assignedAt: grievance.assignedAt,
         timeline: grievance.timeline
       }, oldStatus, status);
+    } else if (oldStatus !== status && [GrievanceStatus.ASSIGNED, GrievanceStatus.REJECTED, GrievanceStatus.PENDING].includes(status)) {
+      // Notify citizen for ASSIGNED, REJECTED, PENDING (RESOLVED uses notifyCitizenOnResolution above)
+      const { notifyCitizenOnGrievanceStatusChange } = await import('../services/notificationService');
+      const departmentName = (grievance.departmentId as any)?.name || 'Department';
+      await notifyCitizenOnGrievanceStatusChange({
+        companyId: grievance.companyId,
+        grievanceId: grievance.grievanceId,
+        citizenName: grievance.citizenName,
+        citizenPhone: grievance.citizenPhone,
+        citizenWhatsApp: grievance.citizenWhatsApp,
+        departmentName,
+        newStatus: status,
+        remarks: remarks || undefined
+      });
     }
 
     await logUserAction(

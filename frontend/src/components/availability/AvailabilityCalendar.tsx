@@ -65,6 +65,7 @@ export default function AvailabilityCalendar({ isOpen, onClose, departmentId }: 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
+  const [markingHolidayForDate, setMarkingHolidayForDate] = useState<string | null>(null);
 
   // Fetch availability settings
   const fetchAvailability = useCallback(async () => {
@@ -114,6 +115,7 @@ export default function AvailabilityCalendar({ isOpen, onClose, departmentId }: 
       if (response && response.availability) {
         toast.success('Availability settings saved successfully!');
         setHasChanges(false);
+        onClose();
       }
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to save settings');
@@ -176,6 +178,7 @@ export default function AvailabilityCalendar({ isOpen, onClose, departmentId }: 
   // Add holiday
   const addHoliday = async (holiday: Holiday) => {
     try {
+      setMarkingHolidayForDate(holiday.date);
       const specialDate: SpecialDate = {
         date: holiday.date,
         type: 'holiday',
@@ -190,6 +193,8 @@ export default function AvailabilityCalendar({ isOpen, onClose, departmentId }: 
       }
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to add holiday');
+    } finally {
+      setMarkingHolidayForDate(null);
     }
   };
 
@@ -655,15 +660,31 @@ export default function AvailabilityCalendar({ isOpen, onClose, departmentId }: 
                                   )}
                                 </span>
                               </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => addHoliday({ date: selectedDate.toISOString().split('T')[0], name: 'Custom Holiday', type: 'holiday' })}
-                                className="text-indigo-600 border-indigo-200 hover:bg-indigo-50"
-                              >
-                                <PartyPopper className="w-4 h-4 mr-1" />
-                                Mark as Holiday
-                              </Button>
+                              {(() => {
+                                const selectedDateStr = selectedDate.toISOString().split('T')[0];
+                                const isMarking = markingHolidayForDate === selectedDateStr;
+                                return (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={isMarking}
+                                    onClick={() => addHoliday({ date: selectedDateStr, name: 'Custom Holiday', type: 'holiday' })}
+                                    className={`text-indigo-600 border-indigo-200 hover:bg-indigo-50 ${isMarking ? 'opacity-80 cursor-wait' : ''}`}
+                                  >
+                                    {isMarking ? (
+                                      <>
+                                        <div className="w-4 h-4 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin mr-1" />
+                                        Marking as holiday...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <PartyPopper className="w-4 h-4 mr-1" />
+                                        Mark as Holiday
+                                      </>
+                                    )}
+                                  </Button>
+                                );
+                              })()}
                             </div>
                           );
                         })()}

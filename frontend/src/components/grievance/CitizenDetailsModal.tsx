@@ -1,10 +1,22 @@
 'use client';
 
+import { useState } from 'react';
 import { Grievance } from '@/lib/api/grievance';
 import { Appointment } from '@/lib/api/appointment';
-import { X, MapPin, Phone, Calendar, Image as ImageIcon, FileText, User, MessageCircle, Tag, Clock } from 'lucide-react';
+import { X, MapPin, Phone, Calendar, Image as ImageIcon, FileText, User, MessageCircle, Tag, Clock, FileType } from 'lucide-react';
 import Image from 'next/image';
 import { format, formatDistanceToNow } from 'date-fns';
+
+const isImageMedia = (media: { type?: string; url?: string }) =>
+  media.type === 'image' || /\.(jpe?g|png|gif|webp|bmp)(\?|$)/i.test(media.url || '') || (media.url && media.url.includes('image'));
+
+const getDocumentLabel = (url: string) => {
+  if (!url) return 'Document';
+  const lower = url.toLowerCase();
+  if (lower.includes('.pdf') || lower.includes('pdf')) return 'PDF';
+  if (lower.includes('.doc') || lower.includes('word')) return 'Word';
+  return 'Document';
+};
 
 interface CitizenDetailsModalProps {
   isOpen: boolean;
@@ -19,6 +31,8 @@ export default function CitizenDetailsModal({
   grievance,
   appointment
 }: CitizenDetailsModalProps) {
+  const [fullScreenMedia, setFullScreenMedia] = useState<{ url: string; alt?: string } | null>(null);
+
   if (!isOpen || (!grievance && !appointment)) return null;
 
   const data = (grievance || appointment) as any;
@@ -311,7 +325,7 @@ export default function CitizenDetailsModal({
               <div className="bg-gradient-to-r from-slate-50 to-pink-50 px-5 py-4 border-b border-slate-100">
                 <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
                   <ImageIcon className="w-5 h-5 text-pink-600" />
-                  Attached Photos
+                  Uploaded Media
                   <span className="ml-2 px-2 py-0.5 bg-pink-100 text-pink-600 rounded-full text-xs font-bold">
                     {grievance.media.length}
                   </span>
@@ -319,19 +333,73 @@ export default function CitizenDetailsModal({
               </div>
               <div className="p-5">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {grievance.media.map((media: any, index: number) => (
-                    <div key={index} className="relative group rounded-xl overflow-hidden border border-slate-200 aspect-video">
-                      <Image
-                        src={media.url}
-                        alt={`Evidence ${index + 1}`}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        onClick={() => window.open(media.url, '_blank')}
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                    </div>
-                  ))}
+                  {grievance.media.map((media: any, index: number) => {
+                    const isImage = isImageMedia(media);
+                    return (
+                      <div key={index} className="relative group rounded-xl overflow-hidden border border-slate-200 aspect-video">
+                        {isImage ? (
+                          <button
+                            type="button"
+                            onClick={() => setFullScreenMedia({ url: media.url, alt: `Evidence ${index + 1}` })}
+                            className="absolute inset-0 w-full h-full text-left focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-inset rounded-xl"
+                          >
+                            <Image
+                              src={media.url}
+                              alt={`Evidence ${index + 1}`}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
+                              unoptimized={!media.url?.includes('cloudinary')}
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                              <span className="opacity-0 group-hover:opacity-100 text-white text-sm font-medium bg-black/50 px-3 py-1.5 rounded-lg transition-opacity">
+                                Click to view full screen
+                              </span>
+                            </div>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => media.url && window.open(media.url, '_blank', 'noopener,noreferrer')}
+                            className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex flex-col items-center justify-center hover:from-slate-200 hover:to-slate-300 transition-colors cursor-pointer border-0"
+                          >
+                            <FileType className="w-10 h-10 text-slate-500 mb-2" />
+                            <span className="text-sm font-medium text-slate-600">{getDocumentLabel(media.url || '')}</span>
+                            <span className="text-xs text-slate-400 mt-0.5">Click to open</span>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Full-screen image overlay */}
+          {fullScreenMedia && (
+            <div
+              className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
+              onClick={() => setFullScreenMedia(null)}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Media full screen view"
+            >
+              <button
+                type="button"
+                onClick={() => setFullScreenMedia(null)}
+                className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+                aria-label="Close full screen"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <div className="relative w-full h-full min-h-[50vh]" onClick={(e) => e.stopPropagation()}>
+                <Image
+                  src={fullScreenMedia.url}
+                  alt={fullScreenMedia.alt || 'Full size'}
+                  fill
+                  className="object-contain"
+                  unoptimized
+                />
               </div>
             </div>
           )}

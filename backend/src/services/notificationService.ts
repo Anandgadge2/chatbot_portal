@@ -1,4 +1,5 @@
 import Company from '../models/Company';
+import CompanyWhatsAppConfig from '../models/CompanyWhatsAppConfig';
 import Department from '../models/Department';
 import User from '../models/User';
 import { sendEmail, getNotificationEmailContent, getNotificationWhatsAppMessage } from './emailService';
@@ -46,6 +47,25 @@ interface NotificationData {
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */
 /* ------------------------------------------------------------------ */
+
+/** Load company and attach WhatsApp config from CompanyWhatsAppConfig so notifications can be sent */
+async function getCompanyWithWhatsAppConfig(companyId: any): Promise<any | null> {
+  const id = companyId?.toString ? companyId.toString() : companyId;
+  if (!id) return null;
+  const company = await Company.findById(id);
+  if (!company) return null;
+  const config = await CompanyWhatsAppConfig.findOne({
+    companyId: company._id,
+    isActive: true
+  });
+  if (config) {
+    (company as any).whatsappConfig = {
+      phoneNumberId: config.phoneNumberId,
+      accessToken: config.accessToken
+    };
+  }
+  return company;
+}
 
 function isWhatsAppEnabled(company: any): boolean {
   // Check company config first
@@ -145,7 +165,7 @@ export async function notifyDepartmentAdminOnCreation(
   data: NotificationData
 ): Promise<void> {
   try {
-    const company = await Company.findById(data.companyId);
+    const company = await getCompanyWithWhatsAppConfig(data.companyId);
     if (!company) return;
 
     // For CEO appointments, departmentId is null - notify Company Admin instead
@@ -335,7 +355,7 @@ export async function notifyUserOnAssignment(
   data: NotificationData
 ): Promise<void> {
   try {
-    const company = await Company.findById(data.companyId);
+    const company = await getCompanyWithWhatsAppConfig(data.companyId);
     if (!company) return;
 
     const user = await User.findById(data.assignedTo);
@@ -429,7 +449,7 @@ export async function notifyCitizenOnResolution(
   data: NotificationData
 ): Promise<void> {
   try {
-    const company = await Company.findById(data.companyId);
+    const company = await getCompanyWithWhatsAppConfig(data.companyId);
     if (!company) return;
 
     const department = await Department.findById(data.departmentId);
@@ -558,6 +578,54 @@ export async function notifyCitizenOnResolution(
 }
 
 /* ------------------------------------------------------------------ */
+/* Grievance status change notification (ASSIGNED, REJECTED, PENDING)  */
+/* ------------------------------------------------------------------ */
+
+export async function notifyCitizenOnGrievanceStatusChange(data: {
+  companyId: any;
+  grievanceId: string;
+  citizenName: string;
+  citizenPhone: string;
+  citizenWhatsApp?: string;
+  departmentName?: string;
+  newStatus: string;
+  remarks?: string;
+}): Promise<void> {
+  try {
+    const company = await getCompanyWithWhatsAppConfig(data.companyId);
+    if (!company) return;
+
+    const departmentName = data.departmentName || 'Department';
+    const remarksText = data.remarks ? `\n\n📝 *Remarks:*\n${data.remarks}` : '';
+    const statusLabel = data.newStatus === 'ASSIGNED' ? 'Assigned' : data.newStatus === 'REJECTED' ? 'Rejected' : data.newStatus === 'PENDING' ? 'Pending' : data.newStatus;
+
+    const message =
+      `*${company.name}*\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `📋 *GRIEVANCE STATUS UPDATE*\n\n` +
+      `Respected ${data.citizenName},\n\n` +
+      `Your grievance status has been updated.\n\n` +
+      `*Details:*\n` +
+      `🎫 *Ref No:* \`${data.grievanceId}\`\n` +
+      `🏢 *Department:* ${departmentName}\n` +
+      `📊 *New Status:* ${statusLabel}${remarksText}\n\n` +
+      `You will receive further updates via WhatsApp.\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `*${company.name}*\n` +
+      `Digital Grievance Redressal System`;
+
+    const result = await safeSendWhatsApp(company, data.citizenWhatsApp || data.citizenPhone, message);
+    if (result.success) {
+      logger.info(`✅ Grievance status notification sent to ${data.citizenName} (${data.citizenPhone})`);
+    } else {
+      logger.error(`❌ Failed to send grievance status notification: ${result.error}`);
+    }
+  } catch (error) {
+    logger.error('❌ notifyCitizenOnGrievanceStatusChange failed:', error);
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Hierarchy Notification                                              */
 /* ------------------------------------------------------------------ */
 
@@ -567,7 +635,7 @@ export async function notifyHierarchyOnStatusChange(
   newStatus: string
 ): Promise<void> {
   try {
-    const company = await Company.findById(data.companyId);
+    const company = await getCompanyWithWhatsAppConfig(data.companyId);
     if (!company) return;
 
     const department = await Department.findById(data.departmentId);
@@ -731,7 +799,7 @@ export async function notifyCitizenOnAppointmentStatusChange(data: {
   purpose?: string;
 }): Promise<void> {
   try {
-    const company = await Company.findById(data.companyId);
+    const company = await getCompanyWithWhatsAppConfig(data.companyId);
     if (!company) {
       logger.warn('Company not found for appointment status notification');
       return;

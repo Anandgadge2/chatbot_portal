@@ -780,9 +780,12 @@ export async function processWhatsAppMessage(message: ChatbotMessage): Promise<a
         const selectedDate = session.data.dateMapping[buttonId];
         if (selectedDate) {
           session.data.selectedDate = selectedDate;
+          session.data.appointmentDate = selectedDate; // for placeholders and time-step API
           await updateSession(session);
-          // Continue to next step (usually time selection)
-          if (session.data.currentStepId) {
+          const nextStepId = session.data.availabilityNextStepId;
+          if (nextStepId) {
+            await flowEngine.executeStep(nextStepId);
+          } else if (session.data.currentStepId) {
             await flowEngine.executeStep(session.data.currentStepId);
           }
         }
@@ -794,9 +797,12 @@ export async function processWhatsAppMessage(message: ChatbotMessage): Promise<a
         const selectedTime = session.data.timeMapping[buttonId];
         if (selectedTime) {
           session.data.selectedTime = selectedTime;
+          session.data.appointmentTime = selectedTime; // for placeholders
           await updateSession(session);
-          // Continue to next step
-          if (session.data.currentStepId) {
+          const nextStepId = session.data.availabilityNextStepId;
+          if (nextStepId) {
+            await flowEngine.executeStep(nextStepId);
+          } else if (session.data.currentStepId) {
             await flowEngine.executeStep(session.data.currentStepId);
           }
         }
@@ -2244,7 +2250,7 @@ async function createAppointment(
       purpose: session.data.purpose,
       appointmentDate: appointmentDate,
       appointmentTime: appointmentTime,
-      status: AppointmentStatus.REQUESTED // Changed to REQUESTED - waiting for admin approval
+      status: AppointmentStatus.SCHEDULED
     };
 
     console.log('📝 Appointment data:', JSON.stringify(appointmentData, null, 2));
@@ -2289,15 +2295,16 @@ async function createAppointment(
     };
     const timeDisplay = formatTime12HrDisplay(appointmentTime);
 
-    // Send "REQUESTED" message instead of "CONFIRMED"
-    const requestedMessage = getTranslation('aptRequested', session.language)
+    // Send scheduled confirmation (default status is SCHEDULED)
+    const scheduledMessage = getTranslation('aptScheduled', session.language)
       .replace('{id}', appointment.appointmentId)
       .replace('{name}', session.data.citizenName)
       .replace('{date}', dateDisplay)
       .replace('{time}', timeDisplay)
-      .replace('{purpose}', session.data.purpose);
+      .replace('{purpose}', session.data.purpose)
+      .replace('{remarks}', getTranslation('label_no_remarks', session.language) || '—');
 
-    await sendWhatsAppMessage(company, message.from, requestedMessage);
+    await sendWhatsAppMessage(company, message.from, scheduledMessage);
 
     // End chat after successful submission
     await sendWhatsAppMessage(company, message.from, getTranslation('goodbye', session.language));
