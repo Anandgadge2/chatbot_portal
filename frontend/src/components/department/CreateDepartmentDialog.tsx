@@ -9,7 +9,7 @@ import { departmentAPI, Department } from '@/lib/api/department';
 import { companyAPI, Company } from '@/lib/api/company';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { validatePhoneNumber, normalizePhoneNumber } from '@/lib/utils/phoneUtils';
+import { validateTelephone } from '@/lib/utils/phoneUtils';
 
 interface CreateDepartmentDialogProps {
   isOpen: boolean;
@@ -95,14 +95,18 @@ const CreateDepartmentDialog: React.FC<CreateDepartmentDialogProps> = ({ isOpen,
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.companyId) {
-      toast.error('Please fill in all required fields');
+    if (!formData.name?.trim()) {
+      toast.error('Please enter department name');
+      return;
+    }
+    if (!formData.companyId) {
+      toast.error('Please select a company');
       return;
     }
 
-    // Validate phone number if provided
-    if (formData.contactPhone && !validatePhoneNumber(formData.contactPhone)) {
-      toast.error('Contact phone number must be exactly 10 digits');
+    // Validate contact phone (telephone) if provided
+    if (formData.contactPhone && !validateTelephone(formData.contactPhone)) {
+      toast.error('Contact phone must be 6–15 digits (e.g. 0721-2662926 or 9356150561)');
       return;
     }
 
@@ -233,8 +237,8 @@ const CreateDepartmentDialog: React.FC<CreateDepartmentDialogProps> = ({ isOpen,
               </div>
             </div>
 
-           {/* <div>
-              <Label htmlFor="companyId">Company *</Label> 
+            <div>
+              <Label htmlFor="companyId">Company *</Label>
               {user?.role === 'COMPANY_ADMIN' && !editingDepartment ? (
                 <>
                   <Input
@@ -263,7 +267,7 @@ const CreateDepartmentDialog: React.FC<CreateDepartmentDialogProps> = ({ isOpen,
                   ))}
                 </select>
               )}
-            </div> */}
+            </div>
 
             <div>
               <Label htmlFor="description">Description (English)</Label>
@@ -329,28 +333,27 @@ const CreateDepartmentDialog: React.FC<CreateDepartmentDialogProps> = ({ isOpen,
                 />
               </div>
               <div>
-                <Label htmlFor="contactPhone">Contact Phone</Label>
+                <Label htmlFor="contactPhone">Contact Phone (optional)</Label>
                 <Input
                   id="contactPhone"
                   name="contactPhone"
                   type="tel"
                   value={formData.contactPhone}
                   onChange={(e) => {
-                    // Only allow digits, max 10
-                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    // Allow digits, spaces, hyphens, plus for telephone (landline/mobile)
+                    const value = e.target.value.replace(/[^\d\s\-+]/g, '');
                     setFormData(prev => ({ ...prev, contactPhone: value }));
                   }}
-                  maxLength={10}
-                  placeholder="10 digit number (e.g., 9356150561)"
+                  placeholder="e.g. 0721-2662926 or 9356150561"
                 />
-                {formData.contactPhone && !validatePhoneNumber(formData.contactPhone) && (
-                  <p className="text-xs text-red-500 mt-1">Phone number must be exactly 10 digits</p>
+                {formData.contactPhone && !validateTelephone(formData.contactPhone) && (
+                  <p className="text-xs text-red-500 mt-1">Contact phone must be 6–15 digits</p>
                 )}
               </div>
             </div>
 
             <div>
-              <Label htmlFor="contactEmail">Contact Email</Label>
+              <Label htmlFor="contactEmail">Contact Email (optional)</Label>
               <Input
                 id="contactEmail"
                 name="contactEmail"

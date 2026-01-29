@@ -86,24 +86,27 @@ router.post('/', requireSuperAdmin, async (req: Request, res: Response) => {
       admin // Admin user data
     } = req.body;
 
-    // Validate required fields
-    if (!name || !companyType || !contactEmail || !contactPhone) {
+    // Validate required fields (only name and companyType; contact email/phone are optional)
+    if (!name || !companyType) {
       console.log('Validation failed: missing required fields');
       return res.status(400).json({
         success: false,
-        message: 'Please provide all required company fields'
+        message: 'Please provide company name and type'
       });
     }
 
-    // Validate and normalize contact phone
-    const { validatePhoneNumber, normalizePhoneNumber } = await import('../utils/phoneUtils');
-    if (!validatePhoneNumber(contactPhone)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Contact phone number must be exactly 10 digits'
-      });
+    // Validate and normalize contact phone if provided (telephone: landline or mobile)
+    const { validateTelephone, normalizeTelephone } = await import('../utils/phoneUtils');
+    let normalizedContactPhone: string | undefined = contactPhone;
+    if (contactPhone) {
+      if (!validateTelephone(contactPhone)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Contact phone must be 6–15 digits (e.g. 0721-2662926 or 9356150561)'
+        });
+      }
+      normalizedContactPhone = normalizeTelephone(contactPhone);
     }
-    const normalizedContactPhone = normalizePhoneNumber(contactPhone);
 
     // Validate admin password if admin is provided
     if (admin && admin.password) {
@@ -116,9 +119,10 @@ router.post('/', requireSuperAdmin, async (req: Request, res: Response) => {
       }
     }
 
-    // Validate and normalize admin phone if provided
+    // Validate and normalize admin phone if provided (10-digit mobile)
     let normalizedAdminPhone = admin?.phone;
     if (admin && admin.phone) {
+      const { validatePhoneNumber, normalizePhoneNumber } = await import('../utils/phoneUtils');
       if (!validatePhoneNumber(admin.phone)) {
         return res.status(400).json({
           success: false,
@@ -137,7 +141,7 @@ router.post('/', requireSuperAdmin, async (req: Request, res: Response) => {
       nameOr: nameOr || undefined,
       nameMr: nameMr || undefined,
       companyType,
-      contactEmail,
+      contactEmail: contactEmail || undefined,
       contactPhone: normalizedContactPhone,
       address,
       enabledModules: enabledModules || [],
@@ -164,7 +168,7 @@ router.post('/', requireSuperAdmin, async (req: Request, res: Response) => {
           lastName: admin.lastName,
           email: admin.email,
           password: admin.password, // Pre-save hook will hash this
-          phone: normalizedAdminPhone || normalizedContactPhone,
+          phone: normalizedAdminPhone || normalizedContactPhone || undefined,
           role: UserRole.COMPANY_ADMIN,
           companyId: company._id,
           isActive: true,
@@ -315,14 +319,14 @@ router.put('/:id', requireSuperAdmin, async (req: Request, res: Response) => {
     const updateData: any = { ...req.body };
     
     if (updateData.contactPhone) {
-      const { validatePhoneNumber, normalizePhoneNumber } = await import('../utils/phoneUtils');
-      if (!validatePhoneNumber(updateData.contactPhone)) {
+      const { validateTelephone, normalizeTelephone } = await import('../utils/phoneUtils');
+      if (!validateTelephone(updateData.contactPhone)) {
         return res.status(400).json({
           success: false,
-          message: 'Contact phone number must be exactly 10 digits'
+          message: 'Contact phone must be 6–15 digits (e.g. 0721-2662926 or 9356150561)'
         });
       }
-      updateData.contactPhone = normalizePhoneNumber(updateData.contactPhone);
+      updateData.contactPhone = normalizeTelephone(updateData.contactPhone);
     }
 
     const company = await Company.findByIdAndUpdate(

@@ -46,6 +46,26 @@ export function validatePhoneNumber(phone: string): boolean {
 }
 
 /**
+ * Validates telephone number (landline or mobile) - 6 to 15 digits after stripping spaces/dashes
+ * Use for contact phone fields; use validatePhoneNumber for user mobile (10 digits)
+ */
+export function validateTelephone(phone: string): boolean {
+  if (!phone) return false;
+  const digitsOnly = phone.replace(/\D/g, '');
+  return digitsOnly.length >= 6 && digitsOnly.length <= 15;
+}
+
+/**
+ * Normalizes telephone for storage: digits only; if 10 digits, prepend 91
+ */
+export function normalizeTelephone(phone: string): string {
+  if (!phone) return phone;
+  const digitsOnly = phone.replace(/\D/g, '');
+  if (digitsOnly.length === 10) return `91${digitsOnly}`;
+  return digitsOnly;
+}
+
+/**
  * Validates password - must be at least 6 characters
  * @param password - Password string
  * @returns true if valid, false otherwise

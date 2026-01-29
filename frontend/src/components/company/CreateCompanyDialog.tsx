@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { companyAPI, CreateCompanyData, Company } from '@/lib/api/company';
 import toast from 'react-hot-toast';
-import { validatePhoneNumber, validatePassword, normalizePhoneNumber } from '@/lib/utils/phoneUtils';
+import { validatePhoneNumber, validatePassword, validateTelephone } from '@/lib/utils/phoneUtils';
 
 // Available modules
 const AVAILABLE_MODULES = [
@@ -111,8 +111,8 @@ const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ isOpen, onClo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.contactEmail || !formData.contactPhone) {
-      toast.error('Please fill in all required company fields');
+    if (!formData.name) {
+      toast.error('Please fill in company name');
       return;
     }
 
@@ -121,9 +121,9 @@ const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ isOpen, onClo
       return;
     }
 
-    // Validate contact phone if provided
-    if (formData.contactPhone && !validatePhoneNumber(formData.contactPhone)) {
-      toast.error('Contact phone number must be exactly 10 digits');
+    // Validate contact phone (telephone) if provided
+    if (formData.contactPhone && !validateTelephone(formData.contactPhone)) {
+      toast.error('Contact phone must be 6–15 digits (e.g. 0721-2662926 or 9356150561)');
       return;
     }
 
@@ -276,7 +276,7 @@ const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ isOpen, onClo
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="nameHi">Company Name (Hindi)</Label>
+                <Label htmlFor="nameHi">Company Name (Hindi) (optional)</Label>
                 <Input
                   id="nameHi"
                   name="nameHi"
@@ -287,7 +287,7 @@ const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ isOpen, onClo
                 />
               </div>
               <div>
-                <Label htmlFor="nameMr">Company Name (Marathi)</Label>
+                <Label htmlFor="nameMr">Company Name (Marathi) (optional)</Label>
                 <Input
                   id="nameMr"
                   name="nameMr"
@@ -300,7 +300,7 @@ const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ isOpen, onClo
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="nameOr">Company Name (Odia)</Label>
+                <Label htmlFor="nameOr">Company Name (Odia) (optional)</Label>
                 <Input
                   id="nameOr"
                   name="nameOr"
@@ -314,35 +314,32 @@ const CreateCompanyDialog: React.FC<CreateCompanyDialogProps> = ({ isOpen, onClo
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="contactEmail">Contact Email *</Label>
+                <Label htmlFor="contactEmail">Contact Email (optional)</Label>
                 <Input
                   id="contactEmail"
                   name="contactEmail"
                   type="email"
                   value={formData.contactEmail}
                   onChange={handleChange}
-                  required
                   placeholder="contact@company.com"
                 />
               </div>
               <div>
-                <Label htmlFor="contactPhone">Contact Phone *</Label>
+                <Label htmlFor="contactPhone">Contact Phone (optional)</Label>
                 <Input
                   id="contactPhone"
                   name="contactPhone"
                   type="tel"
                   value={formData.contactPhone}
                   onChange={(e) => {
-                    // Only allow digits, max 10
-                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    // Allow digits, spaces, hyphens, plus for telephone (landline/mobile)
+                    const value = e.target.value.replace(/[^\d\s\-+]/g, '');
                     setFormData(prev => ({ ...prev, contactPhone: value }));
                   }}
-                  maxLength={10}
-                  required
-                  placeholder="10 digit number (e.g., 9356150561)"
+                  placeholder="e.g. 0721-2662926 or 9356150561"
                 />
-                {formData.contactPhone && !validatePhoneNumber(formData.contactPhone) && (
-                  <p className="text-xs text-red-500 mt-1">Phone number must be exactly 10 digits</p>
+                {formData.contactPhone && !validateTelephone(formData.contactPhone) && (
+                  <p className="text-xs text-red-500 mt-1">Contact phone must be 6–15 digits</p>
                 )}
               </div>
             </div>

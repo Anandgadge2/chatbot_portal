@@ -12,8 +12,8 @@ export interface ICompany extends Document {
   nameMr?: string;
   companyType: CompanyType;
   enabledModules: Module[];
-  contactEmail: string;
-  contactPhone: string;
+  contactEmail?: string;
+  contactPhone?: string;
   address?: string;
   theme: {
     primaryColor: string;
@@ -58,13 +58,13 @@ const CompanySchema: Schema = new Schema(
     }],
     contactEmail: {
       type: String,
-      required: true,
+      required: false,
       lowercase: true,
       trim: true
     },
     contactPhone: {
       type: String,
-      required: true
+      required: false
     },
     address: {
       type: String,

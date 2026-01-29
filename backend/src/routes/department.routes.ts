@@ -98,17 +98,17 @@ router.post('/', requirePermission(Permission.CREATE_DEPARTMENT), async (req: Re
       return;
     }
 
-    // Validate and normalize phone number if provided
+    // Validate and normalize contact phone if provided (telephone: landline or mobile)
     let normalizedContactPhone = contactPhone;
     if (contactPhone) {
-      const { validatePhoneNumber, normalizePhoneNumber } = await import('../utils/phoneUtils');
-      if (!validatePhoneNumber(contactPhone)) {
+      const { validateTelephone, normalizeTelephone } = await import('../utils/phoneUtils');
+      if (!validateTelephone(contactPhone)) {
         return res.status(400).json({
           success: false,
-          message: 'Contact phone number must be exactly 10 digits'
+          message: 'Contact phone must be 6–15 digits (e.g. 0721-2662926 or 9356150561)'
         });
       }
-      normalizedContactPhone = normalizePhoneNumber(contactPhone);
+      normalizedContactPhone = normalizeTelephone(contactPhone);
     }
 
     // Non-SuperAdmin users can only create departments for their own company
@@ -224,14 +224,14 @@ router.put('/:id', requirePermission(Permission.UPDATE_DEPARTMENT), async (req: 
     const updateData: any = { ...req.body };
     
     if (updateData.contactPhone) {
-      const { validatePhoneNumber, normalizePhoneNumber } = await import('../utils/phoneUtils');
-      if (!validatePhoneNumber(updateData.contactPhone)) {
+      const { validateTelephone, normalizeTelephone } = await import('../utils/phoneUtils');
+      if (!validateTelephone(updateData.contactPhone)) {
         return res.status(400).json({
           success: false,
-          message: 'Contact phone number must be exactly 10 digits'
+          message: 'Contact phone must be 6–15 digits (e.g. 0721-2662926 or 9356150561)'
         });
       }
-      updateData.contactPhone = normalizePhoneNumber(updateData.contactPhone);
+      updateData.contactPhone = normalizeTelephone(updateData.contactPhone);
     }
 
     const department = await Department.findByIdAndUpdate(

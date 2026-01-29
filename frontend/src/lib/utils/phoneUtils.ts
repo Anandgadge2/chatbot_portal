@@ -46,6 +46,15 @@ export function validatePhoneNumber(phone: string): boolean {
 }
 
 /**
+ * Validates telephone (contact phone: landline or mobile) - 6 to 15 digits after stripping
+ */
+export function validateTelephone(phone: string): boolean {
+  if (!phone) return false;
+  const digitsOnly = phone.replace(/\D/g, '');
+  return digitsOnly.length >= 6 && digitsOnly.length <= 15;
+}
+
+/**
  * Validates password - must be at least 6 characters
  * @param password - Password string
  * @returns true if valid, false otherwise
