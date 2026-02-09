@@ -110,7 +110,7 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
         ],
         nextStep: null
       },
-      { stepId: 'grievance_start', type: 'message', content: { text: { en: '📝 *Register a Grievance*\n\nYou can file a formal complaint regarding any ZP department.\n\nTo begin, please provide the details as requested.' } }, nextStep: 'grievance_name' },
+      { stepId: 'grievance_start', type: 'message', content: { text: { en: '📝 *Register a Grievance*\n\nYou can file a formal complaint regarding any department.\n\nTo begin, please provide the details as requested.' } }, nextStep: 'grievance_name' },
       {
         stepId: 'grievance_name',
         type: 'collect_input',
