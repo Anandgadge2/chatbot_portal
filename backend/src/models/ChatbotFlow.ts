@@ -157,7 +157,7 @@ const FlowStepSchema = new Schema({
   stepId: { type: String, required: true },
   stepType: { 
     type: String, 
-    enum: ['message', 'buttons', 'list', 'input', 'media', 'condition', 'api_call'],
+    enum: ['message', 'buttons', 'list', 'input', 'media', 'condition', 'api_call', 'delay', 'assign_department', 'dynamic_response'],
     required: true 
   },
   stepName: { type: String, required: true },
@@ -223,6 +223,15 @@ const FlowStepSchema = new Schema({
     saveResponseTo: String,
     nextStepId: String
   },
+  delayConfig: {
+    duration: Number,
+    unit: { type: String, enum: ['seconds', 'minutes', 'hours'] }
+  },
+  assignDepartmentConfig: {
+    departmentId: String,
+    isDynamic: Boolean,
+    conditionField: String
+  },
   timeout: Number,
   retryOnFailure: Boolean,
   variables: Schema.Types.Mixed,
@@ -231,6 +240,10 @@ const FlowStepSchema = new Schema({
     value: { type: String, required: true },
     nextStepId: { type: String, required: false }
   }],
+  position: {
+    x: Number,
+    y: Number
+  },
   nextStepId: String
 }, { _id: false });
 
