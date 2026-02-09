@@ -170,8 +170,22 @@ router.post('/', authenticate, requireSuperAdmin, async (req: Request, res: Resp
         }
       }
       
-      // Update existing config
-      Object.assign(existing, req.body);
+      // Sanitized update
+      const updateData = { ...req.body };
+      const internalFields = ['_id', 'companyId', 'createdAt', 'updatedAt', '__v', 'createdBy', 'stats', 'isVerified', 'verifiedAt'];
+      internalFields.forEach(field => delete (updateData as any)[field]);
+
+      // Handle populated activeFlows
+      if (Array.isArray(updateData.activeFlows)) {
+        updateData.activeFlows = updateData.activeFlows.map((flow: any) => {
+          if (flow.flowId && typeof flow.flowId === 'object' && flow.flowId._id) {
+            return { ...flow, flowId: flow.flowId._id };
+          }
+          return flow;
+        });
+      }
+      
+      Object.assign(existing, updateData);
       existing.updatedBy = user._id;
       await existing.save();
 
@@ -203,9 +217,24 @@ router.post('/', authenticate, requireSuperAdmin, async (req: Request, res: Resp
       }
     }
 
+    // Sanitized create data
+    const createData = { ...req.body };
+    const internalFields = ['_id', 'createdAt', 'updatedAt', '__v', 'stats', 'isVerified', 'verifiedAt'];
+    internalFields.forEach(field => delete (createData as any)[field]);
+
+    // Handle populated activeFlows
+    if (Array.isArray(createData.activeFlows)) {
+      createData.activeFlows = createData.activeFlows.map((flow: any) => {
+        if (flow.flowId && typeof flow.flowId === 'object' && flow.flowId._id) {
+          return { ...flow, flowId: flow.flowId._id };
+        }
+        return flow;
+      });
+    }
+
     // Create new config
     const config = await CompanyWhatsAppConfig.create({
-      ...req.body,
+      ...createData,
       createdBy: user._id
     });
 
@@ -217,21 +246,8 @@ router.post('/', authenticate, requireSuperAdmin, async (req: Request, res: Resp
   } catch (error: any) {
     console.error('❌ Error saving WhatsApp config:', error);
     
-    // Handle duplicate key errors more gracefully
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern || {})[0] || 'field';
-      return res.status(400).json({
-        success: false,
-        message: `Duplicate key error: ${field} already exists. Please use a unique ${field}.`,
-        error: error.message
-      });
-    }
-    
-    res.status(500).json({
-      success: false,
-      message: 'Failed to save WhatsApp configuration',
-      error: error.message
-    });
+    // Pass to global error handler for proper status codes (400 for validation/duplicate)
+    throw error;
   }
 });
 
@@ -243,6 +259,7 @@ router.post('/', authenticate, requireSuperAdmin, async (req: Request, res: Resp
 router.put('/:id', authenticate, requireSuperAdmin, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
+    const { phoneNumberId, phoneNumber } = req.body;
     
     const config = await CompanyWhatsAppConfig.findById(req.params.id);
     if (!config) {
@@ -252,7 +269,49 @@ router.put('/:id', authenticate, requireSuperAdmin, async (req: Request, res: Re
       });
     }
 
-    Object.assign(config, req.body);
+    // Check for conflicts with other configs
+    if (phoneNumberId && phoneNumberId !== config.phoneNumberId) {
+      const conflict = await CompanyWhatsAppConfig.findOne({ 
+        phoneNumberId, 
+        _id: { $ne: config._id } 
+      });
+      if (conflict) {
+        return res.status(400).json({
+          success: false,
+          message: `Phone Number ID ${phoneNumberId} is already used by another company`
+        });
+      }
+    }
+    
+    if (phoneNumber && phoneNumber !== config.phoneNumber) {
+      const conflict = await CompanyWhatsAppConfig.findOne({ 
+        phoneNumber, 
+        _id: { $ne: config._id } 
+      });
+      if (conflict) {
+        return res.status(400).json({
+          success: false,
+          message: `Phone Number ${phoneNumber} is already used by another company`
+        });
+      }
+    }
+
+    // Sanitized update
+    const updateData = { ...req.body };
+    const internalFields = ['_id', 'companyId', 'createdAt', 'updatedAt', '__v', 'createdBy', 'stats', 'isVerified', 'verifiedAt'];
+    internalFields.forEach(field => delete (updateData as any)[field]);
+
+    // Handle populated activeFlows
+    if (Array.isArray(updateData.activeFlows)) {
+      updateData.activeFlows = updateData.activeFlows.map((flow: any) => {
+        if (flow.flowId && typeof flow.flowId === 'object' && flow.flowId._id) {
+          return { ...flow, flowId: flow.flowId._id };
+        }
+        return flow;
+      });
+    }
+
+    Object.assign(config, updateData);
     config.updatedBy = user._id;
     
     await config.save();
@@ -263,11 +322,9 @@ router.put('/:id', authenticate, requireSuperAdmin, async (req: Request, res: Re
       data: config
     });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update WhatsApp configuration',
-      error: error.message
-    });
+    console.error('❌ Error updating WhatsApp config:', error);
+    // Throwing here will be caught by express-async-errors and passed to our global errorHandler
+    throw error;
   }
 });
 
@@ -377,8 +434,7 @@ router.post('/:id/assign-flow', authenticate, requireSuperAdmin, async (req: Req
         await ChatbotFlow.updateMany(
           { 
             companyId: config.companyId, 
-            _id: { $ne: flow._id },
-            isDeleted: false
+            _id: { $ne: flow._id }
           },
           { isActive: false }
         );

@@ -83,14 +83,12 @@ const CompanyWhatsAppConfigSchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Company',
       required: true,
-      unique: true,
-      index: true
+      unique: true
     },
     phoneNumber: {
       type: String,
       required: true,
-      unique: true,
-      index: true
+      unique: true
     },
     displayPhoneNumber: {
       type: String,
@@ -99,8 +97,7 @@ const CompanyWhatsAppConfigSchema: Schema = new Schema(
     phoneNumberId: {
       type: String,
       required: true,
-      unique: true,
-      index: true
+      unique: true
     },
     businessAccountId: {
       type: String,

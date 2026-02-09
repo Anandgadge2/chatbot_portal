@@ -214,8 +214,7 @@ export class DynamicFlowEngine {
       // Get all departments for this company
       const departments = await Department.find({ 
         companyId: this.company._id, 
-        isActive: true, 
-        isDeleted: false 
+        isActive: true 
       });
       
       console.log(`📊 Found ${departments.length} department(s) for company ${this.company._id}`);
@@ -430,8 +429,7 @@ export class DynamicFlowEngine {
 
       const departments = await Department.find({
         companyId: this.company._id,
-        isActive: true,
-        isDeleted: false
+        isActive: true
       });
 
       if (departments.length === 0) {
@@ -835,8 +833,7 @@ export class DynamicFlowEngine {
       if (ref.startsWith('GRV')) {
         const grievance = await Grievance.findOne({
           companyId: this.company._id,
-          grievanceId: ref,
-          isDeleted: false
+          grievanceId: ref
         }).populate('assignedTo', 'name');
         if (grievance) {
           this.session.data.recordType = 'Grievance';
@@ -856,8 +853,7 @@ export class DynamicFlowEngine {
       } else if (ref.startsWith('APT')) {
         const appointment = await Appointment.findOne({
           companyId: this.company._id,
-          appointmentId: ref,
-          isDeleted: false
+          appointmentId: ref
         }).populate('assignedTo', 'name');
         if (appointment) {
           this.session.data.recordType = 'Appointment';
@@ -945,8 +941,7 @@ export class DynamicFlowEngine {
         const departmentAdmin = await User.findOne({
           departmentId,
           role: UserRole.DEPARTMENT_ADMIN,
-          isActive: true,
-          isDeleted: false
+          isActive: true
         });
         if (departmentAdmin) {
           grievance.assignedTo = departmentAdmin._id;

@@ -30,7 +30,6 @@ export async function findDepartmentByCategory(
     const department = await Department.findOne({
       companyId,
       isActive: true,
-      isDeleted: false,
       $or: matchingKeywords.map(keyword => ({
         name: { $regex: new RegExp(keyword, 'i') }
       }))
@@ -43,8 +42,7 @@ export async function findDepartmentByCategory(
     // If no exact match, try to find a department with similar name
     const allDepartments = await Department.find({
       companyId,
-      isActive: true,
-      isDeleted: false
+      isActive: true
     });
 
     // Find best match
@@ -58,8 +56,7 @@ export async function findDepartmentByCategory(
     // If still no match, return first active department or null
     const firstDept = await Department.findOne({
       companyId,
-      isActive: true,
-      isDeleted: false
+      isActive: true
     });
 
     return firstDept?._id || null;
@@ -75,8 +72,7 @@ export async function getAvailableCategories(companyId: mongoose.Types.ObjectId)
   try {
     const departments = await Department.find({
       companyId,
-      isActive: true,
-      isDeleted: false
+      isActive: true
     });
 
     // Extract categories from department names

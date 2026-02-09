@@ -455,7 +455,6 @@ router.get('/users/available', async (req: Request, res: Response) => {
     const { type } = req.query; // 'grievance' or 'appointment'
     const query: any = { 
       isActive: true, 
-      isDeleted: false,
       // Exclude current user from the list - cannot assign to self
       _id: { $ne: currentUser._id }
     };

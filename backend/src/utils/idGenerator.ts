@@ -78,8 +78,7 @@ export async function initializeCounters(companyId?: mongoose.Types.ObjectId): P
       }
       
       const lastGrievance = await Grievance.findOne(grievanceQuery, { grievanceId: 1 })
-        .sort({ grievanceId: -1 })
-        .setOptions({ includeDeleted: true });
+        .sort({ grievanceId: -1 });
 
       let initialValue = 0;
       if (lastGrievance && lastGrievance.grievanceId) {
@@ -106,8 +105,7 @@ export async function initializeCounters(companyId?: mongoose.Types.ObjectId): P
       }
       
       const lastAppointment = await Appointment.findOne(aptQuery, { appointmentId: 1 })
-        .sort({ appointmentId: -1 })
-        .setOptions({ includeDeleted: true });
+        .sort({ appointmentId: -1 });
 
       let initialValue = 0;
       if (lastAppointment && lastAppointment.appointmentId) {
@@ -136,8 +134,7 @@ export async function initializeCounters(companyId?: mongoose.Types.ObjectId): P
       }
       
       const lastUser = await User.findOne(usrQuery, { userId: 1 })
-        .sort({ userId: -1 })
-        .setOptions({ includeDeleted: true });
+        .sort({ userId: -1 });
 
       let initialValue = 0;
       if (lastUser && lastUser.userId) {

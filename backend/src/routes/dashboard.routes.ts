@@ -20,11 +20,11 @@ router.use(requireDatabaseConnection);
 router.get('/superadmin', authenticate, requireSuperAdminDashboard, async (req: Request, res: Response) => {
   try {
     const stats = {
-      companies: await Company.countDocuments({ isDeleted: false }),
-      users: await User.countDocuments({ isDeleted: false }),
-      departments: await Department.countDocuments({ isDeleted: false }),
-      activeCompanies: await Company.countDocuments({ isActive: true, isDeleted: false }),
-      activeUsers: await User.countDocuments({ isActive: true, isDeleted: false })
+      companies: await Company.countDocuments({}),
+      users: await User.countDocuments({}),
+      departments: await Department.countDocuments({}),
+      activeCompanies: await Company.countDocuments({ isActive: true }),
+      activeUsers: await User.countDocuments({ isActive: true })
     };
 
     return res.json({
@@ -60,9 +60,9 @@ router.get('/company-admin', authenticate, requireCompanyAdminDashboard, async (
     }
 
     const stats = {
-      users: await User.countDocuments({ ...companyFilter, isDeleted: false }),
-      departments: await Department.countDocuments({ ...companyFilter, isDeleted: false }),
-      activeUsers: await User.countDocuments({ ...companyFilter, isActive: true, isDeleted: false })
+      users: await User.countDocuments({ ...companyFilter }),
+      departments: await Department.countDocuments({ ...companyFilter }),
+      activeUsers: await User.countDocuments({ ...companyFilter, isActive: true })
     };
 
     // Get company info if not SuperAdmin
@@ -108,8 +108,8 @@ router.get('/department-admin', authenticate, requireDepartmentAdminDashboard, a
     }
 
     const stats = {
-      users: await User.countDocuments({ ...filter, isDeleted: false }),
-      activeUsers: await User.countDocuments({ ...filter, isActive: true, isDeleted: false })
+      users: await User.countDocuments({ ...filter }),
+      activeUsers: await User.countDocuments({ ...filter, isActive: true })
     };
 
     // Get department info if Department Admin
@@ -161,11 +161,11 @@ router.get('/any/:dashboardType', canAccessAnyDashboard, async (req: Request, re
 
     // Get comprehensive stats for SuperAdmin
     const stats = {
-      companies: await Company.countDocuments({ isDeleted: false }),
-      users: await User.countDocuments({ isDeleted: false }),
-      departments: await Department.countDocuments({ isDeleted: false }),
-      activeCompanies: await Company.countDocuments({ isActive: true, isDeleted: false }),
-      activeUsers: await User.countDocuments({ isActive: true, isDeleted: false })
+      companies: await Company.countDocuments({}),
+      users: await User.countDocuments({}),
+      departments: await Department.countDocuments({}),
+      activeCompanies: await Company.countDocuments({ isActive: true }),
+      activeUsers: await User.countDocuments({ isActive: true })
     };
 
     return res.json({

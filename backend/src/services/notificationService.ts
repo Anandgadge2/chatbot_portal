@@ -148,8 +148,7 @@ async function getDepartmentAdmin(departmentId: any): Promise<any | null> {
     return await User.findOne({
       departmentId,
       role: UserRole.DEPARTMENT_ADMIN,
-      isActive: true,
-      isDeleted: false
+      isActive: true
     });
   } catch (error) {
     logger.error('Error getting department admin:', error);
@@ -174,8 +173,7 @@ export async function notifyDepartmentAdminOnCreation(
       const companyAdmins = await User.find({
         companyId: data.companyId,
         role: UserRole.COMPANY_ADMIN,
-        isActive: true,
-        isDeleted: false
+        isActive: true
       });
 
       if (companyAdmins.length === 0) {
@@ -662,8 +660,7 @@ export async function notifyHierarchyOnStatusChange(
         { role: UserRole.DEPARTMENT_ADMIN, departmentId: data.departmentId },
         { _id: data.assignedTo }
       ],
-      isActive: true,
-      isDeleted: false
+      isActive: true
     });
 
     const resolvedAt = data.resolvedAt || new Date();

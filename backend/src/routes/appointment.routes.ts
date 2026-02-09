@@ -66,8 +66,7 @@ router.get('/', requirePermission(Permission.READ_APPOINTMENT), async (req: Requ
       query.appointmentDate = { $gte: startDate, $lt: endDate };
     }
 
-    // Exclude soft-deleted appointments
-    query.isDeleted = { $ne: true };
+    // List appointments
 
     const appointments = await Appointment.find(query)
       .populate('companyId', 'name companyId')
@@ -163,10 +162,7 @@ router.post('/', async (req: Request, res: Response) => {
 router.get('/:id', requirePermission(Permission.READ_APPOINTMENT), async (req: Request, res: Response) => {
   try {
     const currentUser = req.user!;
-    const appointment = await Appointment.findOne({ 
-      _id: req.params.id,
-      isDeleted: { $ne: true }
-    })
+    const appointment = await Appointment.findById(req.params.id)
       .populate('companyId', 'name companyId')
       .populate('departmentId', 'name departmentId')
       .populate('assignedTo', 'firstName lastName email')
@@ -249,10 +245,7 @@ router.put('/:id/status', requirePermission(Permission.STATUS_CHANGE_APPOINTMENT
       }
     }
 
-    const appointment = await Appointment.findOne({ 
-      _id: req.params.id,
-      isDeleted: { $ne: true }
-    });
+    const appointment = await Appointment.findById(req.params.id);
 
     if (!appointment) {
       res.status(404).json({
@@ -367,8 +360,7 @@ router.put('/:id', requirePermission(Permission.UPDATE_APPOINTMENT), async (req:
 
     // Check department/company access
     const appointment = await Appointment.findOne({ 
-      _id: req.params.id,
-      isDeleted: { $ne: true }
+      _id: req.params.id
     });
     if (!appointment) {
       return res.status(404).json({
@@ -455,13 +447,8 @@ router.delete('/bulk', requirePermission(Permission.DELETE_APPOINTMENT), async (
       return;
     }
 
-    const result = await Appointment.updateMany(
-      { _id: { $in: ids } },
-      {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedBy: currentUser._id
-      }
+    const result = await Appointment.deleteMany(
+      { _id: { $in: ids } }
     );
 
     // Log each deletion
@@ -476,8 +463,8 @@ router.delete('/bulk', requirePermission(Permission.DELETE_APPOINTMENT), async (
 
     res.json({
       success: true,
-      message: `${result.modifiedCount} appointment(s) deleted successfully`,
-      data: { deletedCount: result.modifiedCount }
+      message: `${result.deletedCount} appointment(s) deleted successfully`,
+      data: { deletedCount: result.deletedCount }
     });
   } catch (error: any) {
     res.status(500).json({
@@ -503,15 +490,7 @@ router.delete('/:id', requirePermission(Permission.DELETE_APPOINTMENT), async (r
     return;
   }
   try {
-    const appointment = await Appointment.findByIdAndUpdate(
-      req.params.id,
-      {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedBy: req.user!._id
-      },
-      { new: true }
-    );
+    const appointment = await Appointment.findByIdAndDelete(req.params.id);
 
     if (!appointment) {
       res.status(404).json({

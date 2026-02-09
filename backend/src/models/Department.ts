@@ -21,9 +21,6 @@ export interface IDepartment extends Document {
   contactEmail?: string;
   contactPhone?: string;
   isActive: boolean;
-  isDeleted: boolean;
-  deletedAt?: Date;
-  deletedBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -72,18 +69,6 @@ const DepartmentSchema: Schema = new Schema(
     isActive: {
       type: Boolean,
       default: true
-    },
-    isDeleted: {
-      type: Boolean,
-      default: false,
-      index: true
-    },
-    deletedAt: {
-      type: Date
-    },
-    deletedBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User'
     }
   },
   {
@@ -92,7 +77,6 @@ const DepartmentSchema: Schema = new Schema(
 );
 
 // Compound indexes
-DepartmentSchema.index({ companyId: 1, isDeleted: 1 });
 DepartmentSchema.index({ companyId: 1, name: 1 }, { unique: true });
 
 // Pre-save hook to generate departmentId
@@ -101,8 +85,7 @@ DepartmentSchema.pre('save', async function (next) {
     // Find the last departmentId globally, including soft-deleted docs
     const lastDept = await mongoose.model('Department')
       .findOne({}, { departmentId: 1 })
-      .sort({ departmentId: -1 })
-      .setOptions({ includeDeleted: true }); // specific option to bypass the isDeleted filter
+      .sort({ departmentId: -1 });
 
     let nextNum = 1;
     if (lastDept && lastDept.departmentId) {
@@ -113,15 +96,6 @@ DepartmentSchema.pre('save', async function (next) {
     }
     
     this.departmentId = `DEPT${String(nextNum).padStart(6, '0')}`;
-  }
-  next();
-});
-
-// Query middleware to exclude soft-deleted by default
-DepartmentSchema.pre(/^find/, function (next) {
-  // @ts-ignore
-  if (!(this as any).getOptions().includeDeleted) {
-    (this as any).where({ isDeleted: false });
   }
   next();
 });

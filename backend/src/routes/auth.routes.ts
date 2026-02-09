@@ -90,8 +90,7 @@ router.post('/sso/login', async (req: Request, res: Response) => {
 
     // STEP 4: Find user in database
     const user = await User.findOne({ 
-      phone,
-      isDeleted: false 
+      phone
     });
 
     if (!user) {
@@ -217,7 +216,7 @@ router.post('/login', async (req: Request, res: Response) => {
     console.log('🔐 Login attempt for:', normalizedPhone || email);
 
     // Find user by phone or email (exclude soft-deleted)
-    const query: any = { isDeleted: false };
+    const query: any = {};
     if (email) {
       query.email = email;
     } else {
@@ -337,8 +336,7 @@ router.post('/register', async (req: Request, res: Response) => {
     // Allow same phone/email across different companies, but not within the same company
     // For SUPER_ADMIN (companyId = null), keep phone/email globally unique
     const phoneQuery: any = { 
-      phone, 
-      isDeleted: false 
+      phone
     };
     
     if (companyId) {
@@ -367,8 +365,7 @@ router.post('/register', async (req: Request, res: Response) => {
     // Check if email already exists in the same company if provided
     if (email) {
       const emailQuery: any = { 
-        email: email.toLowerCase().trim(), 
-        isDeleted: false 
+        email: email.toLowerCase().trim()
       };
       
       if (companyId) {

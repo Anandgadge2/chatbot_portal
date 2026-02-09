@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { userAPI } from '@/lib/api/user';
+import { userAPI, User } from '@/lib/api/user';
 import { companyAPI, Company } from '@/lib/api/company';
 import { departmentAPI, Department } from '@/lib/api/department';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,9 +18,10 @@ interface CreateUserDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onUserCreated: () => void;
+  editingUser?: User | null;
 }
 
-const CreateUserDialog: React.FC<CreateUserDialogProps> = ({ isOpen, onClose, onUserCreated }) => {
+const CreateUserDialog: React.FC<CreateUserDialogProps> = ({ isOpen, onClose, onUserCreated, editingUser }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -154,46 +155,63 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({ isOpen, onClose, on
       fetchCompanies();
       fetchDepartments();
       
-      // Auto-select and lock company/department based on user's role
-      const userCompanyId = user?.companyId 
-        ? (typeof user.companyId === 'object' ? user.companyId._id : user.companyId)
-        : '';
-      const userDepartmentId = user?.departmentId 
-        ? (typeof user.departmentId === 'object' ? user.departmentId._id : user.departmentId)
-        : '';
-      
-      if (user?.role === UserRole.COMPANY_ADMIN && userCompanyId) {
-        // CompanyAdmin: auto-set company, disable it
-        setFormData(prev => ({ 
-          ...prev, 
-          companyId: userCompanyId,
-          // Set default role to OPERATOR if not set
-          role: prev.role || 'OPERATOR'
-        }));
-      } else if (user?.role === UserRole.DEPARTMENT_ADMIN && userCompanyId && userDepartmentId) {
-        // DepartmentAdmin: auto-set company and department, disable both
-        setFormData(prev => ({ 
-          ...prev, 
-          companyId: userCompanyId,
-          departmentId: userDepartmentId,
-          // Set default role to OPERATOR if not set
-          role: prev.role || 'OPERATOR'
-        }));
-      } else if (user?.role === UserRole.SUPER_ADMIN) {
-        // SuperAdmin: reset form, allow all selections
+      if (editingUser) {
         setFormData({
-          firstName: '',
-          lastName: '',
-          email: '',
-          password: '',
-          phone: '',
-          role: 'OPERATOR',
-          companyId: '',
-          departmentId: ''
+          firstName: editingUser.firstName || '',
+          lastName: editingUser.lastName || '',
+          email: editingUser.email || '',
+          password: '', // Don't show password
+          phone: editingUser.phone || '',
+          role: editingUser.role || 'OPERATOR',
+          companyId: typeof editingUser.companyId === 'object' ? editingUser.companyId?._id : (editingUser.companyId || ''),
+          departmentId: typeof editingUser.departmentId === 'object' ? editingUser.departmentId?._id : (editingUser.departmentId || '')
         });
+      } else {
+        // Auto-select and lock company/department based on user's role
+        const userCompanyId = user?.companyId 
+          ? (typeof user.companyId === 'object' ? user.companyId._id : user.companyId)
+          : '';
+        const userDepartmentId = user?.departmentId 
+          ? (typeof user.departmentId === 'object' ? user.departmentId._id : user.departmentId)
+          : '';
+        
+        if (user?.role === UserRole.COMPANY_ADMIN && userCompanyId) {
+          setFormData({
+            firstName: '',
+            lastName: '',
+            email: '',
+            password: '',
+            phone: '',
+            role: 'OPERATOR',
+            companyId: userCompanyId,
+            departmentId: ''
+          });
+        } else if (user?.role === UserRole.DEPARTMENT_ADMIN && userCompanyId && userDepartmentId) {
+          setFormData({
+            firstName: '',
+            lastName: '',
+            email: '',
+            password: '',
+            phone: '',
+            role: 'OPERATOR',
+            companyId: userCompanyId,
+            departmentId: userDepartmentId
+          });
+        } else {
+          setFormData({
+            firstName: '',
+            lastName: '',
+            email: '',
+            password: '',
+            phone: '',
+            role: 'OPERATOR',
+            companyId: '',
+            departmentId: ''
+          });
+        }
       }
     }
-  }, [isOpen, user, fetchCompanies, fetchDepartments]);
+  }, [isOpen, user, editingUser, fetchCompanies, fetchDepartments]);
 
   useEffect(() => {
     // Reset dependent fields when role changes
@@ -207,8 +225,16 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({ isOpen, onClose, on
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.role) {
+    const isEditing = !!editingUser;
+
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.role) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    // Password is only required when creating a new user
+    if (!isEditing && !formData.password) {
+      toast.error('Password is required for new users');
       return;
     }
 
@@ -218,8 +244,8 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({ isOpen, onClose, on
       return;
     }
 
-    // Validate password - must be at least 6 characters
-    if (!validatePassword(formData.password)) {
+    // Validate password if provided
+    if (formData.password && !validatePassword(formData.password)) {
       toast.error('Password must be at least 6 characters');
       return;
     }
@@ -239,38 +265,54 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({ isOpen, onClose, on
       }
     }
     
-    // RBAC validation: Check if user can create the selected role
+    // RBAC validation
     const availableRoles = getAvailableRoles();
     if (!availableRoles.includes(formData.role as UserRole)) {
-      toast.error('You do not have permission to create users with this role');
+      toast.error('You do not have permission for this role');
       return;
     }
 
     setLoading(true);
     try {
-      // Send phone number as-is (10 digits) - backend will normalize it
-      const response = await userAPI.create(formData);
+      let response;
+      const submissionData = {
+        ...formData,
+        companyId: formData.companyId || undefined,
+        departmentId: formData.departmentId || undefined
+      };
+
+      if (isEditing) {
+        // Remove password if empty
+        if (!submissionData.password) {
+          delete (submissionData as any).password;
+        }
+        response = await userAPI.update(editingUser._id, submissionData);
+      } else {
+        response = await userAPI.create(submissionData);
+      }
+
       if (response.success) {
-        toast.success('User created successfully!');
-        setFormData({
-          firstName: '',
-          lastName: '',
-          email: '',
-          password: '',
-          phone: '',
-          role: 'OPERATOR',
-          companyId: '',
-          departmentId: ''
-        });
+        toast.success(isEditing ? 'User updated successfully!' : 'User created successfully!');
+        if (!isEditing) {
+          setFormData({
+            firstName: '',
+            lastName: '',
+            email: '',
+            password: '',
+            phone: '',
+            role: 'OPERATOR',
+            companyId: '',
+            departmentId: ''
+          });
+        }
         onClose();
         onUserCreated();
       } else {
-        toast.error('Failed to create user');
+        toast.error('Operation failed');
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to create user';
-      console.error('User creation error:', error.response?.data);
-      console.error('Full error:', error);
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || 'Operation failed';
+      console.error('User operation error:', error.response?.data);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -339,8 +381,10 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({ isOpen, onClose, on
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
       <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-lg rounded-2xl border border-slate-200/50 shadow-2xl">
         <CardHeader className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white rounded-t-2xl">
-          <CardTitle className="text-xl">Create New User</CardTitle>
-          <CardDescription className="text-indigo-100">Add a new user to the platform</CardDescription>
+          <CardTitle className="text-xl">{editingUser ? 'Edit User' : 'Create New User'}</CardTitle>
+          <CardDescription className="text-indigo-100">
+            {editingUser ? 'Update user information' : 'Add a new user to the platform'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -553,7 +597,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({ isOpen, onClose, on
                     </svg>
                     Creating...
                   </span>
-                ) : 'Create User'}
+                ) : (editingUser ? 'Update User' : 'Create User')}
               </Button>
             </div>
           </form>

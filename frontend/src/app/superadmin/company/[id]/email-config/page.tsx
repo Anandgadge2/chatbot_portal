@@ -134,11 +134,12 @@ export default function EmailConfigPage() {
     }
     setSaving(true);
     try {
+      const portNum = Number(config.port) || 465;
       const payload = {
         companyId,
         host: config.host,
-        port: Number(config.port) || 465,
-        secure: config.port === 465,
+        port: portNum,
+        secure: portNum === 465,
         auth: { user: config.auth?.user, pass: config.auth?.pass },
         fromEmail: config.fromEmail,
         fromName: config.fromName,
@@ -164,7 +165,17 @@ export default function EmailConfigPage() {
   const handleTest = async () => {
     setTesting(true);
     try {
-      await apiClient.post(`/email-config/company/${companyId}/test`);
+      // Send current state for testing so user can verify before saving
+      const portNum = Number(config.port) || 465;
+      const testPayload = {
+        host: config.host,
+        port: portNum,
+        secure: portNum === 465,
+        auth: config.auth,
+        fromEmail: config.fromEmail
+      };
+      
+      await apiClient.post(`/email-config/company/${companyId}/test`, testPayload);
       toast.success('SMTP connection successful');
     } catch (error: any) {
       toast.error(error.response?.data?.message || error.response?.data?.error || 'SMTP test failed');
@@ -232,8 +243,8 @@ export default function EmailConfigPage() {
                 <Button
                   onClick={handleTest}
                   disabled={testing || isEditing}
-                  variant="outline"
-                  className="text-white border-white/30 hover:bg-white/10"
+                  variant="default"
+                  className="text-Black border-Black/30 hover:bg-Black/10"
                 >
                   <CheckCircle className="w-4 h-4 mr-2" />
                   {testing ? 'Testing...' : 'Test Connection'}

@@ -211,32 +211,50 @@ router.put('/:id', authenticate, requireSuperAdmin, async (req: Request, res: Re
 router.post('/company/:companyId/test', authenticate, requireSuperAdmin, async (req: Request, res: Response) => {
   try {
     const { companyId } = req.params;
-    let query: any = {};
-    if (mongoose.Types.ObjectId.isValid(companyId)) {
-      query.companyId = new mongoose.Types.ObjectId(companyId);
-    } else {
-      const company = await Company.findOne({ companyId });
-      if (!company) {
-        return res.status(404).json({ success: false, message: 'Company not found' });
-      }
-      query.companyId = company._id;
-    }
+    const { host, port, secure, auth } = req.body;
+    
+    let configToTest: any;
 
-    const config = await CompanyEmailConfig.findOne(query);
-    if (!config) {
-      return res.status(404).json({
-        success: false,
-        message: 'Email configuration not found for this company'
-      });
+    if (host && auth?.user && auth?.pass) {
+      // Use provided settings for testing before save
+      configToTest = {
+        host,
+        port: Number(port) || 465,
+        secure: secure === undefined ? (Number(port) === 465) : Boolean(secure),
+        auth
+      };
+    } else {
+      // Fetch from database
+      let query: any = {};
+      if (mongoose.Types.ObjectId.isValid(companyId)) {
+        query.companyId = new mongoose.Types.ObjectId(companyId);
+      } else {
+        const company = await Company.findOne({ companyId });
+        if (!company) {
+          return res.status(404).json({ success: false, message: 'Company not found' });
+        }
+        query.companyId = company._id;
+      }
+
+      configToTest = await CompanyEmailConfig.findOne(query);
+      if (!configToTest) {
+        return res.status(404).json({
+          success: false,
+          message: 'Email configuration not found for this company'
+        });
+      }
     }
 
     const transport = nodemailer.createTransport({
-      host: config.host,
-      port: config.port,
-      secure: config.secure,
-      requireTLS: config.port === 587,
-      auth: config.auth,
-      tls: { rejectUnauthorized: true }
+      host: configToTest.host,
+      port: configToTest.port,
+      secure: configToTest.secure,
+      requireTLS: configToTest.port === 587,
+      auth: configToTest.auth,
+      tls: { 
+        rejectUnauthorized: true,
+        // Some older servers might need this, but for security we keep it true by default
+      }
     } as SMTPTransport.Options);
 
     await transport.verify();
@@ -246,6 +264,7 @@ router.post('/company/:companyId/test', authenticate, requireSuperAdmin, async (
       message: 'SMTP connection successful'
     });
   } catch (error: any) {
+    console.error('SMTP test error:', error);
     res.status(400).json({
       success: false,
       message: 'SMTP test failed',

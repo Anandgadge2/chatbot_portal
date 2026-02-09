@@ -148,8 +148,6 @@ export interface IChatbotFlow extends Document {
   // Audit
   createdBy: mongoose.Types.ObjectId;
   updatedBy: mongoose.Types.ObjectId;
-  isDeleted: boolean;
-  deletedAt?: Date;
   
   createdAt: Date;
   updatedAt: Date;
@@ -335,13 +333,7 @@ const ChatbotFlowSchema: Schema = new Schema(
     updatedBy: {
       type: Schema.Types.ObjectId,
       ref: 'User'
-    },
-    isDeleted: {
-      type: Boolean,
-      default: false,
-      index: true
-    },
-    deletedAt: Date
+    }
   },
   {
     timestamps: true
@@ -358,15 +350,6 @@ ChatbotFlowSchema.pre('save', async function (next) {
   if (this.isNew && !this.flowId) {
     const count = await mongoose.model('ChatbotFlow').countDocuments();
     this.flowId = `FLOW${String(count + 1).padStart(6, '0')}`;
-  }
-  next();
-});
-
-// Query middleware to exclude soft-deleted by default
-ChatbotFlowSchema.pre(/^find/, function (next) {
-  // @ts-ignore
-  if (!(this as any).getOptions().includeDeleted) {
-    (this as any).where({ isDeleted: false });
   }
   next();
 });

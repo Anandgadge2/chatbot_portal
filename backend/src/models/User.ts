@@ -13,10 +13,7 @@ export interface IUser extends Document {
   companyId?: mongoose.Types.ObjectId;
   departmentId?: mongoose.Types.ObjectId;
   isActive: boolean;
-  isDeleted: boolean;
   lastLogin?: Date;
-  deletedAt?: Date;
-  deletedBy?: mongoose.Types.ObjectId;
   createdBy?: mongoose.Types.ObjectId; // Track who created this user for hierarchical rights
   createdAt: Date;
   updatedAt: Date;
@@ -81,20 +78,8 @@ const UserSchema: Schema = new Schema(
       type: Boolean,
       default: true
     },
-    isDeleted: {
-      type: Boolean,
-      default: false,
-      index: true
-    },
     lastLogin: {
       type: Date
-    },
-    deletedAt: {
-      type: Date
-    },
-    deletedBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User'
     },
     createdBy: {
       type: Schema.Types.ObjectId,
@@ -108,8 +93,8 @@ const UserSchema: Schema = new Schema(
 );
 
 // Compound indexes
-UserSchema.index({ companyId: 1, role: 1, isDeleted: 1 });
-UserSchema.index({ departmentId: 1, role: 1, isDeleted: 1 });
+UserSchema.index({ companyId: 1, role: 1 });
+UserSchema.index({ departmentId: 1, role: 1 });
 
 // Compound unique indexes: email and phone must be unique within the same company
 // This allows the same email/phone to be used in different companies, but not in the same company
@@ -137,8 +122,7 @@ UserSchema.pre('validate', async function (next) {
       
       const lastUser = await mongoose.model('User')
         .findOne(query, { userId: 1 })
-        .sort({ userId: -1 })
-        .setOptions({ includeDeleted: true });
+        .sort({ userId: -1 });
 
       let nextNum = 1;
       if (lastUser && lastUser.userId) {
@@ -167,15 +151,6 @@ UserSchema.pre('save', async function (next) {
   } catch (error: any) {
     next(error);
   }
-});
-
-// Query middleware to exclude soft-deleted by default
-UserSchema.pre(/^find/, function (next) {
-  // @ts-ignore
-  if (!(this as any).getOptions().includeDeleted) {
-    (this as any).where({ isDeleted: false });
-  }
-  next();
 });
 
 // Instance method to compare passwords

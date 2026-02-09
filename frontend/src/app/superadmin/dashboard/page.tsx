@@ -52,6 +52,7 @@ export default function SuperAdminDashboard() {
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDepartmentDialog, setShowDepartmentDialog] = useState(false);
   const [showUserDialog, setShowUserDialog] = useState(false);
@@ -225,6 +226,34 @@ export default function SuperAdminDashboard() {
   const handleEditCompany = (company: Company) => {
     setEditingCompany(company);
     setShowCreateDialog(true);
+  };
+
+  const handleEditUser = (u: User) => {
+    setEditingUser(u);
+    setShowUserDialog(true);
+  };
+
+  const handleDeleteUser = (u: User) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete User',
+      message: `Are you sure you want to delete ${u.firstName} ${u.lastName}? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          const response = await userAPI.delete(u._id);
+          if (response.success) {
+            toast.success('User deleted successfully');
+            fetchUsers();
+            setConfirmDialog({ ...confirmDialog, isOpen: false });
+          } else {
+            toast.error('Failed to delete user');
+          }
+        } catch (error: any) {
+          toast.error(error?.response?.data?.message || error?.message || 'Failed to delete user');
+        }
+      },
+      variant: 'danger'
+    });
   };
 
   useEffect(() => {
@@ -735,7 +764,10 @@ export default function SuperAdminDashboard() {
                   </div>
                   <Button 
                     className="bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-sm transition-all duration-200 rounded-xl px-5"
-                    onClick={() => setShowUserDialog(true)}
+                    onClick={() => {
+                      setEditingUser(null);
+                      setShowUserDialog(true);
+                    }}
                   >
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -819,7 +851,22 @@ export default function SuperAdminDashboard() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-900">Edit</Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-blue-600 hover:text-blue-900 mr-2"
+                            onClick={() => handleEditUser(u)}
+                          >
+                            Edit
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-900"
+                            onClick={() => handleDeleteUser(u)}
+                          >
+                            Delete
+                          </Button>
                         </td>
                       </tr>
                       ))}
@@ -876,7 +923,7 @@ export default function SuperAdminDashboard() {
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-300 animate-in fade-in-0 slide-in-from-right-4 duration-500">
+                  <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow animate-in fade-in-0 slide-in-from-right-4 duration-500">
                     <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b border-slate-100">
                       <CardTitle className="text-slate-900">Users Distribution</CardTitle>
                       <CardDescription className="text-slate-600">Active vs Inactive users</CardDescription>
@@ -1220,8 +1267,12 @@ export default function SuperAdminDashboard() {
         />
         <CreateUserDialog 
           isOpen={showUserDialog}
-          onClose={() => setShowUserDialog(false)}
+          onClose={() => {
+            setShowUserDialog(false);
+            setEditingUser(null);
+          }}
           onUserCreated={fetchUsers}
+          editingUser={editingUser}
         />
       </main>
     </div>

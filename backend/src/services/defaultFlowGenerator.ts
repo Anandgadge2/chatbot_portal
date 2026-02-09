@@ -20,11 +20,11 @@ export async function generateDefaultFlows(companyId: string | mongoose.Types.Ob
 
     console.log(`🔄 Generating default flows for company: ${company.name} (${company.companyId})`);
 
-    // Check if default flows already exist (explicitly exclude deleted)
+    // Check if default flows already exist
     const existingFlows = await ChatbotFlow.find({ 
       companyId: companyObjectId,
       flowType: { $in: ['grievance', 'appointment', 'tracking'] }
-    }).setOptions({ includeDeleted: false }); // Pre-find middleware will filter isDeleted: false
+    });
 
     if (existingFlows.length > 0) {
       console.log(`⚠️ Default flows already exist for company ${company.companyId}. Found ${existingFlows.length} flow(s):`);
@@ -339,12 +339,11 @@ export async function hasDefaultFlows(companyId: string | mongoose.Types.ObjectI
       ? (mongoose.Types.ObjectId.isValid(companyId) ? new mongoose.Types.ObjectId(companyId) : companyId)
       : companyId;
 
-    // Use findOne with setOptions to explicitly check for non-deleted flows
-    // The pre-find middleware will automatically filter isDeleted: false, but we want to be explicit
+    // Check for default flows
     const existingFlow = await ChatbotFlow.findOne({ 
       companyId: companyObjectId,
       flowType: { $in: ['grievance', 'appointment', 'tracking'] }
-    }).setOptions({ includeDeleted: false }); // Explicitly exclude deleted
+    });
 
     const exists = !!existingFlow;
     console.log(`🔍 Checking default flows for company ${companyObjectId}: ${exists ? 'EXISTS' : 'NOT FOUND'}`);

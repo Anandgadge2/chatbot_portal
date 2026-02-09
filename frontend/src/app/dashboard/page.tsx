@@ -783,7 +783,7 @@ function DashboardContent() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white tracking-tight">
-                  {isCompanyAdmin && 'Zilla Parishad Admin Dashboard'}
+                  {isCompanyAdmin && 'Admin Dashboard'}
                   {isDepartmentAdmin && 'Department Admin Dashboard'}
                   {isOperator && 'Operator Dashboard'}
                   {isAnalyticsViewer && 'Analytics Dashboard'}

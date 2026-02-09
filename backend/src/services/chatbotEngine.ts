@@ -1204,8 +1204,7 @@ async function continueGrievanceFlow(
       // Get all departments directly instead of categories
       const departments = await Department.find({ 
         companyId: company._id, 
-        isActive: true, 
-        isDeleted: false 
+        isActive: true 
       });
       
       console.log('🏬 All departments:', departments.map(d => ({ name: d.name, id: d._id })));
@@ -1297,8 +1296,7 @@ async function continueGrievanceFlow(
         // Get all departments again
         const departments = await Department.find({ 
           companyId: company._id, 
-          isActive: true, 
-          isDeleted: false 
+          isActive: true 
         });
         
         if (departments.length > 0) {
@@ -2351,42 +2349,36 @@ async function handleStatusTracking(
     // Exact reference number match for grievance
     grievance = await Grievance.findOne({
       companyId: company._id,
-      grievanceId: refNumber,
-      isDeleted: false
+      grievanceId: refNumber
     });
   } else if (isAppointmentRef) {
     // Exact reference number match for appointment
     appointment = await Appointment.findOne({
       companyId: company._id,
-      appointmentId: refNumber,
-      isDeleted: false
+      appointmentId: refNumber
     });
   } else {
     // Phone number lookup - only if exactly ONE record exists (privacy protection)
     const grievanceCount = await Grievance.countDocuments({
       companyId: company._id,
-      citizenPhone: message.from,
-      isDeleted: false
+      citizenPhone: message.from
     });
     
     const appointmentCount = await Appointment.countDocuments({
       companyId: company._id,
-      citizenPhone: message.from,
-      isDeleted: false
+      citizenPhone: message.from
     });
 
     // Only allow phone lookup if exactly one record exists
     if (grievanceCount === 1 && appointmentCount === 0) {
       grievance = await Grievance.findOne({
         companyId: company._id,
-        citizenPhone: message.from,
-        isDeleted: false
+        citizenPhone: message.from
       });
     } else if (appointmentCount === 1 && grievanceCount === 0) {
       appointment = await Appointment.findOne({
         companyId: company._id,
-        citizenPhone: message.from,
-        isDeleted: false
+        citizenPhone: message.from
       });
     } else if (grievanceCount > 1 || appointmentCount > 1 || (grievanceCount > 0 && appointmentCount > 0)) {
       // Multiple records found - require reference number

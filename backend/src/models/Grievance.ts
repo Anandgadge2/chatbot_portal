@@ -32,11 +32,7 @@ export interface IGrievance extends Document {
   resolution?: string;
   resolvedAt?: Date;
   closedAt?: Date;
-  slaBreached: boolean;
   slaDueDate?: Date;
-  isDeleted: boolean;
-  deletedAt?: Date;
-  deletedBy?: mongoose.Types.ObjectId;
   language: 'en' | 'hi' | 'mr' | 'or';
   timeline: Array<{
     action: string;
@@ -160,18 +156,6 @@ const GrievanceSchema: Schema = new Schema(
     slaDueDate: {
       type: Date
     },
-    isDeleted: {
-      type: Boolean,
-      default: false,
-      index: true
-    },
-    deletedAt: {
-      type: Date
-    },
-    deletedBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User'
-    },
     language: {
       type: String,
       enum: ['en', 'hi', 'mr', 'or'],
@@ -199,9 +183,9 @@ const GrievanceSchema: Schema = new Schema(
 );
 
 // Compound indexes
-GrievanceSchema.index({ companyId: 1, status: 1, isDeleted: 1 });
-GrievanceSchema.index({ departmentId: 1, status: 1, isDeleted: 1 });
-GrievanceSchema.index({ assignedTo: 1, status: 1, isDeleted: 1 });
+GrievanceSchema.index({ companyId: 1, status: 1 });
+GrievanceSchema.index({ departmentId: 1, status: 1 });
+GrievanceSchema.index({ assignedTo: 1, status: 1 });
 GrievanceSchema.index({ createdAt: -1 });
 // ✅ Per-company uniqueness: allows GRV00000001.. to restart per company safely
 GrievanceSchema.index({ companyId: 1, grievanceId: 1 }, { unique: true, sparse: true });
@@ -235,15 +219,6 @@ GrievanceSchema.pre('save', async function (next) {
       },
       timestamp: new Date()
     }];
-  }
-  next();
-});
-
-// Query middleware to exclude soft-deleted by default
-GrievanceSchema.pre(/^find/, function (next) {
-  // @ts-ignore
-  if (!(this as any).getOptions().includeDeleted) {
-    (this as any).where({ isDeleted: false });
   }
   next();
 });

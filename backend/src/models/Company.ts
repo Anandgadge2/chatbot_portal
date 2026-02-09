@@ -24,9 +24,6 @@ export interface ICompany extends Document {
   // Note: chatbotConfig moved to ChatbotFlow model
   isActive: boolean;
   isSuspended: boolean;
-  isDeleted: boolean;
-  deletedAt?: Date;
-  deletedBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -92,18 +89,6 @@ const CompanySchema: Schema = new Schema(
     isSuspended: {
       type: Boolean,
       default: false
-    },
-    isDeleted: {
-      type: Boolean,
-      default: false,
-      index: true
-    },
-    deletedAt: {
-      type: Date
-    },
-    deletedBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User'
     }
   },
   {
@@ -112,8 +97,8 @@ const CompanySchema: Schema = new Schema(
 );
 
 // Indexes
-CompanySchema.index({ companyType: 1, isDeleted: 1 });
-CompanySchema.index({ isActive: 1, isSuspended: 1, isDeleted: 1 });
+CompanySchema.index({ companyType: 1 });
+CompanySchema.index({ isActive: 1, isSuspended: 1 });
 
 // Pre-save hook to generate companyId
 CompanySchema.pre('save', async function (next) {
@@ -121,8 +106,7 @@ CompanySchema.pre('save', async function (next) {
     // Find the last companyId globally, including soft-deleted ones
     const lastCompany = await mongoose.model('Company')
       .findOne({}, { companyId: 1 })
-      .sort({ companyId: -1 })
-      .setOptions({ includeDeleted: true });
+      .sort({ companyId: -1 });
 
     let nextNum = 1;
     if (lastCompany && lastCompany.companyId) {
@@ -133,15 +117,6 @@ CompanySchema.pre('save', async function (next) {
     }
 
     this.companyId = `CMP${String(nextNum).padStart(6, '0')}`;
-  }
-  next();
-});
-
-// Query middleware to exclude soft-deleted by default
-CompanySchema.pre(/^find/, function (next) {
-  // @ts-ignore
-  if (!(this as any).getOptions().includeDeleted) {
-    (this as any).where({ isDeleted: false });
   }
   next();
 });

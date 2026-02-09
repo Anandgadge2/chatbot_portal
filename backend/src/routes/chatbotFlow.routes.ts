@@ -81,9 +81,6 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
     if (flowType) query.flowType = flowType;
     if (isActive !== undefined) query.isActive = isActive === 'true';
 
-    // Explicitly exclude deleted flows (pre-find middleware should handle this, but be explicit)
-    query.isDeleted = false;
-
     const flows = await ChatbotFlow.find(query)
       .populate('companyId', 'name companyId')
       .populate('createdBy', 'name email')
@@ -737,8 +734,8 @@ router.delete('/:id', authenticate, requireSuperAdmin, async (req: Request, res:
       });
     }
     
-    // Find flow (use setOptions to include deleted ones for check)
-    const flow = await ChatbotFlow.findById(id).setOptions({ includeDeleted: true });
+    // Find flow
+    const flow = await ChatbotFlow.findById(id);
     
     if (!flow) {
       logger.error(`❌ Flow not found: ${id}`);
@@ -850,8 +847,7 @@ router.post('/:id/activate', authenticate, requireSuperAdmin, async (req: Reques
     await ChatbotFlow.updateMany(
       { 
         companyId: flow.companyId, 
-        _id: { $ne: flow._id },
-        isDeleted: false
+        _id: { $ne: flow._id }
       },
       { isActive: false }
     );

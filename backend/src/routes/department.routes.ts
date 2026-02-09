@@ -287,15 +287,7 @@ router.delete('/:id', requirePermission(Permission.DELETE_DEPARTMENT), async (re
       return;
     }
 
-    const department = await Department.findByIdAndUpdate(
-      req.params.id,
-      {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedBy: user._id
-      },
-      { new: true }
-    );
+    const department = await Department.findByIdAndDelete(req.params.id);
 
     await logUserAction(
       req,

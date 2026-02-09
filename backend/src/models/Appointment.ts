@@ -27,9 +27,6 @@ export interface IAppointment extends Document {
   cancellationReason?: string;
   cancelledAt?: Date;
   completedAt?: Date;
-  isDeleted: boolean;
-  deletedAt?: Date;
-  deletedBy?: mongoose.Types.ObjectId;
   timeline: Array<{
     action: string;
     details?: any;
@@ -137,18 +134,6 @@ const AppointmentSchema: Schema = new Schema(
     completedAt: {
       type: Date
     },
-    isDeleted: {
-      type: Boolean,
-      default: false,
-      index: true
-    },
-    deletedAt: {
-      type: Date
-    },
-    deletedBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User'
-    },
     timeline: [{
       action: {
         type: String,
@@ -171,9 +156,9 @@ const AppointmentSchema: Schema = new Schema(
 );
 
 // Compound indexes
-AppointmentSchema.index({ companyId: 1, status: 1, isDeleted: 1 });
-AppointmentSchema.index({ departmentId: 1, appointmentDate: 1, isDeleted: 1 });
-AppointmentSchema.index({ assignedTo: 1, appointmentDate: 1, isDeleted: 1 });
+AppointmentSchema.index({ companyId: 1, status: 1 });
+AppointmentSchema.index({ departmentId: 1, appointmentDate: 1 });
+AppointmentSchema.index({ assignedTo: 1, appointmentDate: 1 });
 // ✅ Per-company uniqueness: allows APT00000001.. to restart per company safely
 AppointmentSchema.index({ companyId: 1, appointmentId: 1 }, { unique: true, sparse: true });
 
@@ -207,15 +192,6 @@ AppointmentSchema.pre('save', async function (next) {
       },
       timestamp: new Date()
     }];
-  }
-  next();
-});
-
-// Query middleware to exclude soft-deleted by default
-AppointmentSchema.pre(/^find/, function (next) {
-  // @ts-ignore
-  if (!(this as any).getOptions().includeDeleted) {
-    (this as any).where({ isDeleted: false });
   }
   next();
 });

@@ -149,9 +149,7 @@ router.post('/', requireSuperAdmin, async (req: Request, res: Response) => {
         primaryColor: '#0f4c81',
         secondaryColor: '#1a73e8'
       },
-      isActive: true,
-      isSuspended: false,
-      isDeleted: false
+      isSuspended: false
     });
 
     console.log('Company created successfully:', company._id);
@@ -369,15 +367,7 @@ router.put('/:id', requireSuperAdmin, async (req: Request, res: Response) => {
 // @access  Private/SuperAdmin
 router.delete('/:id', requireSuperAdmin, async (req: Request, res: Response) => {
   try {
-    const company = await Company.findByIdAndUpdate(
-      req.params.id,
-      {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedBy: req.user?._id
-      },
-      { new: true }
-    );
+    const company = await Company.findByIdAndDelete(req.params.id);
 
     if (!company) {
       return res.status(404).json({

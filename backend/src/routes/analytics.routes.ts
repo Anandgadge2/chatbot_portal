@@ -38,18 +38,18 @@ router.get('/dashboard', requirePermission(Permission.VIEW_ANALYTICS), async (re
     }
 
     // Get grievance statistics (exclude deleted)
-    const totalGrievances = await Grievance.countDocuments({ ...baseQuery, isDeleted: { $ne: true } });
-    const pendingGrievances = await Grievance.countDocuments({ ...baseQuery, status: GrievanceStatus.PENDING, isDeleted: { $ne: true } });
-    const resolvedGrievances = await Grievance.countDocuments({ ...baseQuery, status: GrievanceStatus.RESOLVED, isDeleted: { $ne: true } });
-    const assignedGrievancesCount = await Grievance.countDocuments({ ...baseQuery, status: GrievanceStatus.ASSIGNED, isDeleted: { $ne: true } });
+    const totalGrievances = await Grievance.countDocuments({ ...baseQuery });
+    const pendingGrievances = await Grievance.countDocuments({ ...baseQuery, status: GrievanceStatus.PENDING });
+    const resolvedGrievances = await Grievance.countDocuments({ ...baseQuery, status: GrievanceStatus.RESOLVED });
+    const assignedGrievancesCount = await Grievance.countDocuments({ ...baseQuery, status: GrievanceStatus.ASSIGNED });
 
     // Get appointment statistics (exclude deleted)
-    const totalAppointments = await Appointment.countDocuments({ ...baseQuery, isDeleted: { $ne: true } });
-    const requestedAppointments = await Appointment.countDocuments({ ...baseQuery, status: AppointmentStatus.REQUESTED, isDeleted: { $ne: true } });
-    const scheduledAppointments = await Appointment.countDocuments({ ...baseQuery, status: AppointmentStatus.SCHEDULED, isDeleted: { $ne: true } });
-    const confirmedAppointments = await Appointment.countDocuments({ ...baseQuery, status: AppointmentStatus.CONFIRMED, isDeleted: { $ne: true } });
-    const completedAppointments = await Appointment.countDocuments({ ...baseQuery, status: AppointmentStatus.COMPLETED, isDeleted: { $ne: true } });
-    const cancelledAppointments = await Appointment.countDocuments({ ...baseQuery, status: AppointmentStatus.CANCELLED, isDeleted: { $ne: true } });
+    const totalAppointments = await Appointment.countDocuments({ ...baseQuery });
+    const requestedAppointments = await Appointment.countDocuments({ ...baseQuery, status: AppointmentStatus.REQUESTED });
+    const scheduledAppointments = await Appointment.countDocuments({ ...baseQuery, status: AppointmentStatus.SCHEDULED });
+    const confirmedAppointments = await Appointment.countDocuments({ ...baseQuery, status: AppointmentStatus.CONFIRMED });
+    const completedAppointments = await Appointment.countDocuments({ ...baseQuery, status: AppointmentStatus.COMPLETED });
+    const cancelledAppointments = await Appointment.countDocuments({ ...baseQuery, status: AppointmentStatus.CANCELLED });
 
     // Get department count (if applicable)
     let departmentCount = 0;
@@ -101,7 +101,7 @@ router.get('/dashboard', requirePermission(Permission.VIEW_ANALYTICS), async (re
 
     // Get daily statistics for last 7 days
     const dailyGrievances = await Grievance.aggregate([
-      { $match: { ...baseQuery, createdAt: { $gte: sevenDaysAgo }, isDeleted: { $ne: true } } },
+      { $match: { ...baseQuery, createdAt: { $gte: sevenDaysAgo } } },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
@@ -112,7 +112,7 @@ router.get('/dashboard', requirePermission(Permission.VIEW_ANALYTICS), async (re
     ]);
 
     const dailyAppointments = await Appointment.aggregate([
-      { $match: { ...baseQuery, createdAt: { $gte: sevenDaysAgo }, isDeleted: { $ne: true } } },
+      { $match: { ...baseQuery, createdAt: { $gte: sevenDaysAgo } } },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
@@ -133,10 +133,10 @@ router.get('/dashboard', requirePermission(Permission.VIEW_ANALYTICS), async (re
       : '0';
 
     // Additional metrics (exclude deleted)
-    const assignedGrievances = await Grievance.countDocuments({ ...baseQuery, status: GrievanceStatus.ASSIGNED, isDeleted: { $ne: true } });
+    const assignedGrievances = await Grievance.countDocuments({ ...baseQuery, status: GrievanceStatus.ASSIGNED });
     
     // SLA breach statistics (exclude deleted)
-    const slaBreachedGrievances = await Grievance.countDocuments({ ...baseQuery, slaBreached: true, isDeleted: { $ne: true } });
+    const slaBreachedGrievances = await Grievance.countDocuments({ ...baseQuery, slaBreached: true });
     const slaComplianceRate = totalGrievances > 0
       ? (((totalGrievances - slaBreachedGrievances) / totalGrievances) * 100).toFixed(1)
       : '100';
@@ -164,7 +164,7 @@ router.get('/dashboard', requirePermission(Permission.VIEW_ANALYTICS), async (re
 
     // Grievances by priority (exclude deleted)
     const grievancesByPriority = await Grievance.aggregate([
-      { $match: { ...baseQuery, isDeleted: { $ne: true } } },
+      { $match: { ...baseQuery } },
       {
         $group: {
           _id: '$priority',
@@ -176,7 +176,7 @@ router.get('/dashboard', requirePermission(Permission.VIEW_ANALYTICS), async (re
 
     // Appointments by department (exclude deleted)
     const appointmentsByDepartment = await Appointment.aggregate([
-      { $match: { ...baseQuery, isDeleted: { $ne: true } } },
+      { $match: { ...baseQuery } },
       {
         $group: {
           _id: '$departmentId',
@@ -211,7 +211,7 @@ router.get('/dashboard', requirePermission(Permission.VIEW_ANALYTICS), async (re
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     
     const monthlyGrievances = await Grievance.aggregate([
-      { $match: { ...baseQuery, createdAt: { $gte: sixMonthsAgo }, isDeleted: { $ne: true } } },
+      { $match: { ...baseQuery, createdAt: { $gte: sixMonthsAgo } } },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } },
@@ -225,7 +225,7 @@ router.get('/dashboard', requirePermission(Permission.VIEW_ANALYTICS), async (re
     ]);
 
     const monthlyAppointments = await Appointment.aggregate([
-      { $match: { ...baseQuery, createdAt: { $gte: sixMonthsAgo }, isDeleted: { $ne: true } } },
+      { $match: { ...baseQuery, createdAt: { $gte: sixMonthsAgo } } },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } },
@@ -274,7 +274,7 @@ router.get('/dashboard', requirePermission(Permission.VIEW_ANALYTICS), async (re
         },
         departments: departmentCount,
         users: userCount,
-        activeUsers: userCount > 0 ? await User.countDocuments({ ...baseQuery, isActive: true, isDeleted: false }) : 0
+        activeUsers: userCount > 0 ? await User.countDocuments({ ...baseQuery, isActive: true }) : 0
       }
     });
   } catch (error: any) {

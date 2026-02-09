@@ -31,7 +31,7 @@ router.get('/companies', requirePermission(Permission.EXPORT_ALL_DATA), async (r
       });
     }
 
-    const companies = await Company.find({ isDeleted: false }).select('-whatsappConfig');
+    const companies = await Company.find({}).select('-whatsappConfig');
 
     const data = companies.map(company => ({
       companyId: company.companyId,
@@ -75,7 +75,7 @@ router.get('/departments', requirePermission(Permission.EXPORT_DATA), async (req
     const currentUser = req.user!;
     const { companyId } = req.query;
 
-    const query: any = { isDeleted: false };
+    const query: any = {};
 
     if (currentUser.role === UserRole.SUPER_ADMIN) {
       if (companyId) query.companyId = companyId;
@@ -125,7 +125,7 @@ router.get('/users', requirePermission(Permission.EXPORT_DATA), async (req: Requ
     const currentUser = req.user!;
     const { companyId, departmentId } = req.query;
 
-    const query: any = { isDeleted: false };
+    const query: any = {};
 
     if (currentUser.role === UserRole.SUPER_ADMIN) {
       if (companyId) query.companyId = companyId;
@@ -190,7 +190,7 @@ router.get('/grievances', requirePermission(Permission.EXPORT_DATA), async (req:
     const currentUser = req.user!;
     const { companyId, departmentId, status } = req.query;
 
-    const query: any = { isDeleted: false };
+    const query: any = {};
 
     if (currentUser.role === UserRole.SUPER_ADMIN) {
       if (companyId) query.companyId = companyId;
@@ -255,7 +255,7 @@ router.get('/appointments', requirePermission(Permission.EXPORT_DATA), async (re
     const currentUser = req.user!;
     const { companyId, departmentId, status } = req.query;
 
-    const query: any = { isDeleted: false };
+    const query: any = {};
 
     if (currentUser.role === UserRole.SUPER_ADMIN) {
       if (companyId) query.companyId = companyId;

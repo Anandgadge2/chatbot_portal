@@ -531,13 +531,8 @@ router.delete('/bulk', requirePermission(Permission.DELETE_GRIEVANCE), async (re
       return;
     }
 
-    const result = await Grievance.updateMany(
-      { _id: { $in: ids } },
-      {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedBy: currentUser._id
-      }
+    const result = await Grievance.deleteMany(
+      { _id: { $in: ids } }
     );
 
     // Log each deletion
@@ -552,8 +547,8 @@ router.delete('/bulk', requirePermission(Permission.DELETE_GRIEVANCE), async (re
 
     res.json({
       success: true,
-      message: `${result.modifiedCount} grievance(s) deleted successfully`,
-      data: { deletedCount: result.modifiedCount }
+      message: `${result.deletedCount} grievance(s) deleted successfully`,
+      data: { deletedCount: result.deletedCount }
     });
   } catch (error: any) {
     res.status(500).json({
@@ -579,15 +574,7 @@ router.delete('/:id', requirePermission(Permission.DELETE_GRIEVANCE), async (req
     return;
   }
   try {
-    const grievance = await Grievance.findByIdAndUpdate(
-      req.params.id,
-      {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedBy: req.user!._id
-      },
-      { new: true }
-    );
+    const grievance = await Grievance.findByIdAndDelete(req.params.id);
 
     if (!grievance) {
       res.status(404).json({

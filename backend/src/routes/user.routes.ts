@@ -255,8 +255,7 @@ router.post('/', requirePermission(Permission.CREATE_USER), async (req: Request,
     // For SUPER_ADMIN (companyId = null), keep email/phone globally unique
     if (email) {
       const emailQuery: any = { 
-        email: email.toLowerCase().trim(), 
-        isDeleted: false 
+        email: email.toLowerCase().trim()
       };
       
       // For SUPER_ADMIN, check globally; for others, check within company
@@ -287,8 +286,7 @@ router.post('/', requirePermission(Permission.CREATE_USER), async (req: Request,
     // Check if phone already exists in the same company
     if (normalizedPhone) {
       const phoneQuery: any = { 
-        phone: normalizedPhone, 
-        isDeleted: false 
+        phone: normalizedPhone
       };
       
       // For SUPER_ADMIN, check globally; for others, check within company
@@ -333,7 +331,6 @@ router.post('/', requirePermission(Permission.CREATE_USER), async (req: Request,
         companyId: finalCompanyId || undefined,
         departmentId: departmentId || undefined,
         isActive: true,
-        isDeleted: false,
         createdBy: currentUser._id // Track who created this user for hierarchical rights
       });
       console.log('✅ User created successfully in database:', user.userId);
@@ -518,6 +515,14 @@ router.put('/:id', requirePermission(Permission.UPDATE_USER), async (req: Reques
       }
     }
 
+    // Clean up empty strings for ID fields
+    if (req.body.companyId === '') {
+      req.body.companyId = undefined;
+    }
+    if (req.body.departmentId === '') {
+      req.body.departmentId = undefined;
+    }
+
     // Check access based on company/department
     if (currentUser.role !== UserRole.SUPER_ADMIN) {
       if (currentUser.role === UserRole.COMPANY_ADMIN && existingUser.companyId?.toString() !== currentUser.companyId?.toString()) {
@@ -640,8 +645,7 @@ router.put('/:id', requirePermission(Permission.UPDATE_USER), async (req: Reques
       const normalizedEmail = req.body.email.toLowerCase().trim();
       const emailQuery: any = {
         email: normalizedEmail,
-        _id: { $ne: existingUser._id }, // Exclude current user
-        isDeleted: false
+        _id: { $ne: existingUser._id } // Exclude current user
       };
       
       // For SUPER_ADMIN, check globally; for others, check within company
@@ -686,8 +690,7 @@ router.put('/:id', requirePermission(Permission.UPDATE_USER), async (req: Reques
 
       const phoneQuery: any = {
         phone: normalizedPhone,
-        _id: { $ne: existingUser._id }, // Exclude current user
-        isDeleted: false
+        _id: { $ne: existingUser._id } // Exclude current user
       };
       
       // For SUPER_ADMIN, check globally; for others, check within company
@@ -864,16 +867,7 @@ router.delete('/:id', requirePermission(Permission.DELETE_USER), async (req: Req
       }
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedBy: currentUser._id,
-        isActive: false
-      },
-      { new: true }
-    );
+    const user = await User.findByIdAndDelete(req.params.id);
 
     await logUserAction(
       req,
