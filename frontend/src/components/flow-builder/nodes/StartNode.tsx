@@ -1,32 +1,66 @@
 'use client';
 
 import { memo } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
+import { NodeProps } from 'reactflow';
 import { Play } from 'lucide-react';
+import { BaseNodeWrapper, NodeField } from './BaseNodeWrapper';
+import { StartNodeData } from '@/types/flowTypes';
 
-export default memo(function StartNode({ data, selected }: NodeProps) {
-  const trigger = (data as any).trigger || 'hi';
-  const triggerType = (data as any).triggerType || 'keyword';
+export default memo(function StartNode({ data, selected, id }: NodeProps) {
+  const nodeData = data as StartNodeData;
+  const trigger = nodeData.trigger || '';
+  const triggerType = nodeData.triggerType || 'keyword';
 
   return (
-    <div
-      className={`px-4 py-3 shadow-lg rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 border-2 min-w-[200px] max-w-[300px] ${
-        selected ? 'border-green-500' : 'border-green-300'
-      }`}
+    <BaseNodeWrapper
+      data={nodeData}
+      selected={selected}
+      icon={<Play className="w-4 h-4" />}
+      color="green"
+      preview={`Trigger: ${trigger}`}
+      onDelete={() => {
+        window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));
+      }}
+      onDuplicate={() => {
+        window.dispatchEvent(new CustomEvent('node:duplicate', { detail: { nodeId: id } }));
+      }}
+      onCopy={() => {
+        window.dispatchEvent(new CustomEvent('node:copy', { detail: { nodeId: id } }));
+      }}
     >
-      <div className="flex items-center gap-2 mb-2">
-        <div className="p-1.5 bg-green-500 rounded">
-          <Play className="w-4 h-4 text-white" />
-        </div>
-        <div className="font-semibold text-sm text-gray-900">{data.label}</div>
-      </div>
-      
-      <div className="text-xs bg-white border border-green-200 rounded px-2 py-1.5">
-        <div className="font-medium text-green-700">Trigger: {trigger}</div>
-        <div className="text-gray-600">Type: {triggerType}</div>
-      </div>
-      
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-green-500" />
-    </div>
+      <NodeField label="Trigger Type">
+        <select
+          value={triggerType}
+          onChange={(e) => {
+            window.dispatchEvent(
+              new CustomEvent('node:update', {
+                detail: { nodeId: id, data: { triggerType: e.target.value } },
+              })
+            );
+          }}
+          className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
+          <option value="keyword">Keyword</option>
+          <option value="button_click">Button Click</option>
+          <option value="menu_selection">Menu Selection</option>
+        </select>
+      </NodeField>
+
+      <NodeField label="Trigger Value">
+        <input
+          type="text"
+          value={trigger}
+          onChange={(e) => {
+            window.dispatchEvent(
+              new CustomEvent('node:update', {
+                detail: { nodeId: id, data: { trigger: e.target.value } },
+              })
+            );
+          }}
+          className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+          placeholder="e.g., hi, hello, start"
+        />
+      </NodeField>
+    </BaseNodeWrapper>
   );
 });

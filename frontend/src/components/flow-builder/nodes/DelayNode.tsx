@@ -1,34 +1,161 @@
 'use client';
 
 import { memo } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
+import { NodeProps } from 'reactflow';
 import { Clock } from 'lucide-react';
+import { BaseNodeWrapper, NodeField } from './BaseNodeWrapper';
+import { DelayNodeData } from '@/types/flowTypes';
 
-export default memo(function DelayNode({ data, selected }: NodeProps) {
-  const duration = (data as any).duration || 5;
-  const unit = (data as any).unit || 'seconds';
+export default memo(function DelayNode({ data, selected, id }: NodeProps) {
+  const nodeData = data as DelayNodeData;
+  const duration = nodeData.duration || 5;
+  const unit = nodeData.unit || 'seconds';
+  const delayType = nodeData.delayType || 'fixed';
+  const preview = delayType === 'fixed' 
+    ? `Wait ${duration} ${unit}`
+    : `Random ${nodeData.randomRange?.min}-${nodeData.randomRange?.max} ${unit}`;
 
   return (
-    <div
-      className={`px-4 py-3 shadow-lg rounded-lg bg-white border-2 min-w-[200px] max-w-[250px] ${
-        selected ? 'border-orange-500' : 'border-orange-200'
-      }`}
+    <BaseNodeWrapper
+      data={nodeData}
+      selected={selected}
+      icon={<Clock className="w-4 h-4" />}
+      color="yellow"
+      preview={preview}
+      onDelete={() => {
+        window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));
+      }}
+      onDuplicate={() => {
+        window.dispatchEvent(new CustomEvent('node:duplicate', { detail: { nodeId: id } }));
+      }}
+      onCopy={() => {
+        window.dispatchEvent(new CustomEvent('node:copy', { detail: { nodeId: id } }));
+      }}
     >
-      <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-orange-500" />
-      
-      <div className="flex items-center gap-2 mb-2">
-        <div className="p-1.5 bg-orange-100 rounded">
-          <Clock className="w-4 h-4 text-orange-600" />
+      <NodeField label="Delay Type">
+        <select
+          value={delayType}
+          onChange={(e) => {
+            window.dispatchEvent(
+              new CustomEvent('node:update', {
+                detail: { nodeId: id, data: { delayType: e.target.value } },
+              })
+            );
+          }}
+          className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+        >
+          <option value="fixed">Fixed</option>
+          <option value="random">Random</option>
+        </select>
+      </NodeField>
+
+      {delayType === 'fixed' ? (
+        <div className="grid grid-cols-2 gap-2">
+          <NodeField label="Duration">
+            <input
+              type="number"
+              value={duration}
+              onChange={(e) => {
+                window.dispatchEvent(
+                  new CustomEvent('node:update', {
+                    detail: { nodeId: id, data: { duration: parseInt(e.target.value) || 0 } },
+                  })
+                );
+              }}
+              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              min="1"
+            />
+          </NodeField>
+
+          <NodeField label="Unit">
+            <select
+              value={unit}
+              onChange={(e) => {
+                window.dispatchEvent(
+                  new CustomEvent('node:update', {
+                    detail: { nodeId: id, data: { unit: e.target.value } },
+                  })
+                );
+              }}
+              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            >
+              <option value="seconds">Seconds</option>
+              <option value="minutes">Minutes</option>
+              <option value="hours">Hours</option>
+            </select>
+          </NodeField>
         </div>
-        <div className="font-semibold text-sm text-gray-900">{data.label}</div>
-      </div>
-      
-      <div className="text-xs bg-orange-50 border border-orange-200 rounded px-2 py-1.5 text-center">
-        <div className="font-bold text-orange-700 text-lg">{duration}</div>
-        <div className="text-orange-600">{unit}</div>
-      </div>
-      
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-orange-500" />
-    </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            <NodeField label="Min">
+              <input
+                type="number"
+                value={nodeData.randomRange?.min || 1}
+                onChange={(e) => {
+                  window.dispatchEvent(
+                    new CustomEvent('node:update', {
+                      detail: {
+                        nodeId: id,
+                        data: {
+                          randomRange: {
+                            ...nodeData.randomRange,
+                            min: parseInt(e.target.value) || 0,
+                          },
+                        },
+                      },
+                    })
+                  );
+                }}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                min="1"
+              />
+            </NodeField>
+
+            <NodeField label="Max">
+              <input
+                type="number"
+                value={nodeData.randomRange?.max || 10}
+                onChange={(e) => {
+                  window.dispatchEvent(
+                    new CustomEvent('node:update', {
+                      detail: {
+                        nodeId: id,
+                        data: {
+                          randomRange: {
+                            ...nodeData.randomRange,
+                            max: parseInt(e.target.value) || 0,
+                          },
+                        },
+                      },
+                    })
+                  );
+                }}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                min="1"
+              />
+            </NodeField>
+          </div>
+
+          <NodeField label="Unit">
+            <select
+              value={unit}
+              onChange={(e) => {
+                window.dispatchEvent(
+                  new CustomEvent('node:update', {
+                    detail: { nodeId: id, data: { unit: e.target.value } },
+                  })
+                );
+              }}
+              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            >
+              <option value="seconds">Seconds</option>
+              <option value="minutes">Minutes</option>
+              <option value="hours">Hours</option>
+            </select>
+          </NodeField>
+        </>
+      )}
+    </BaseNodeWrapper>
   );
 });

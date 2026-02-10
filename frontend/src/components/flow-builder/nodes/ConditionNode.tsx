@@ -1,57 +1,138 @@
 'use client';
 
 import { memo } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
+import { NodeProps } from 'reactflow';
 import { GitBranch } from 'lucide-react';
+import { Handle, Position } from 'reactflow';
+import { BaseNodeWrapper, NodeField } from './BaseNodeWrapper';
+import { ConditionNodeData } from '@/types/flowTypes';
 
-export default memo(function ConditionNode({ data, selected }: NodeProps) {
-  const field = (data as any).field || '';
-  const operator = (data as any).operator || 'equals';
-  const value = (data as any).value || '';
+export default memo(function ConditionNode({ data, selected, id }: NodeProps) {
+  const nodeData = data as ConditionNodeData;
+  const field = nodeData.field || '';
+  const operator = nodeData.operator || 'equals';
+  const value = nodeData.value || '';
+  const preview = `If ${field} ${operator} ${value}`;
 
   return (
-    <div
-      className={`px-4 py-3 shadow-lg rounded-lg bg-white border-2 min-w-[200px] max-w-[300px] ${
-        selected ? 'border-orange-500' : 'border-orange-200'
-      }`}
-    >
-      <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-orange-500" />
-      
-      <div className="flex items-center gap-2 mb-2">
-        <div className="p-1.5 bg-orange-100 rounded">
-          <GitBranch className="w-4 h-4 text-orange-600" />
-        </div>
-        <div className="font-semibold text-sm text-gray-900">{data.label}</div>
-      </div>
-      
-      <div className="text-xs bg-orange-50 border border-orange-200 rounded px-2 py-1.5 space-y-1">
-        <div className="font-mono text-orange-700">
-          {field || '(field)'} {operator} {value || '(value)'}
-        </div>
-      </div>
-      
-      <div className="flex justify-between mt-3">
-        <div className="relative">
-          <div className="text-xs text-green-600 font-medium">True</div>
-          <Handle
-            type="source"
-            position={Position.Bottom}
-            id="true"
-            style={{ left: '25%' }}
-            className="w-3 h-3 !bg-green-500"
+    <div className="relative">
+      <BaseNodeWrapper
+        data={nodeData}
+        selected={selected}
+        icon={<GitBranch className="w-4 h-4" />}
+        color="amber"
+        preview={preview}
+        onDelete={() => {
+          window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));
+        }}
+        onDuplicate={() => {
+          window.dispatchEvent(new CustomEvent('node:duplicate', { detail: { nodeId: id } }));
+        }}
+        onCopy={() => {
+          window.dispatchEvent(new CustomEvent('node:copy', { detail: { nodeId: id } }));
+        }}
+      >
+        <NodeField label="Field">
+          <input
+            type="text"
+            value={field}
+            onChange={(e) => {
+              window.dispatchEvent(
+                new CustomEvent('node:update', {
+                  detail: { nodeId: id, data: { field: e.target.value } },
+                })
+              );
+            }}
+            className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-500"
+            placeholder="e.g., userInput"
           />
-        </div>
-        <div className="relative">
-          <div className="text-xs text-red-600 font-medium">False</div>
-          <Handle
-            type="source"
-            position={Position.Bottom}
-            id="false"
-            style={{ left: '75%' }}
-            className="w-3 h-3 !bg-red-500"
+        </NodeField>
+
+        <NodeField label="Operator">
+          <select
+            value={operator}
+            onChange={(e) => {
+              window.dispatchEvent(
+                new CustomEvent('node:update', {
+                  detail: { nodeId: id, data: { operator: e.target.value } },
+                })
+              );
+            }}
+            className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-500"
+          >
+            <option value="equals">Equals</option>
+            <option value="contains">Contains</option>
+            <option value="greater_than">Greater Than</option>
+            <option value="less_than">Less Than</option>
+            <option value="exists">Exists</option>
+            <option value="not_exists">Not Exists</option>
+          </select>
+        </NodeField>
+
+        <NodeField label="Value">
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => {
+              window.dispatchEvent(
+                new CustomEvent('node:update', {
+                  detail: { nodeId: id, data: { value: e.target.value } },
+                })
+              );
+            }}
+            className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-500"
+            placeholder="Comparison value"
           />
+        </NodeField>
+
+        <div className="grid grid-cols-2 gap-2">
+          <NodeField label="True Label">
+            <input
+              type="text"
+              value={nodeData.trueLabel || 'True'}
+              onChange={(e) => {
+                window.dispatchEvent(
+                  new CustomEvent('node:update', {
+                    detail: { nodeId: id, data: { trueLabel: e.target.value } },
+                  })
+                );
+              }}
+              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-500"
+            />
+          </NodeField>
+
+          <NodeField label="False Label">
+            <input
+              type="text"
+              value={nodeData.falseLabel || 'False'}
+              onChange={(e) => {
+                window.dispatchEvent(
+                  new CustomEvent('node:update', {
+                    detail: { nodeId: id, data: { falseLabel: e.target.value } },
+                  })
+                );
+              }}
+              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-500"
+            />
+          </NodeField>
         </div>
-      </div>
+      </BaseNodeWrapper>
+
+      {/* Custom handles for true/false branches */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="true"
+        style={{ top: '40%', background: '#10b981' }}
+        className="w-3 h-3"
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="false"
+        style={{ top: '60%', background: '#ef4444' }}
+        className="w-3 h-3"
+      />
     </div>
   );
 });

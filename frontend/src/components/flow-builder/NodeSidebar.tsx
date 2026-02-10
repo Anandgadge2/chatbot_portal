@@ -1,155 +1,221 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
-import { NodeType, NodePaletteItem } from '@/types/flowTypes';
+import { useState } from "react";
+import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
+import { NodeType, NodePaletteItem } from "@/types/flowTypes";
 import {
   MessageSquare,
   MousePointerClick,
   List,
   Image,
   FileText,
-  MessageCircle,
-  Keyboard,
-  GitBranch,
-  Building2,
-  Clock,
-  PlayCircle,
-  StopCircle,
-  Zap,
-  ChevronLeft,
-  ChevronRight,
-  Play,
   Type,
+  GitBranch,
   Globe,
   Users,
-  Sparkles,
-} from 'lucide-react';
-import { Input } from '@/components/ui/input';
+  Clock,
+  MapPin,
+  HelpCircle,
+  Tag,
+  Workflow,
+  UserPlus,
+  BarChart3,
+  ChevronRight,
+  Play,
+  StopCircle,
+  ShoppingCart,
+  Package,
+  Boxes,
+  FormInput,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
 
-const nodePalette: NodePaletteItem[] = [
+// Reorganized node palette with Message types and Actions
+const messageTypeNodes: NodePaletteItem[] = [
   {
-    type: 'start',
-    label: 'Start',
-    description: 'Flow entry point with trigger',
-    icon: <Play className="w-5 h-5" />,
-    category: 'control',
+    type: "textMessage",
+    label: "Text Buttons",
+    description: "Send text with button options",
+    icon: <MousePointerClick className="w-4 h-4" />,
+    category: "message",
     defaultData: {},
   },
   {
-    type: 'textMessage',
-    label: 'Text Message',
-    description: 'Send a plain text message',
-    icon: <MessageSquare className="w-5 h-5" />,
-    category: 'message',
+    type: "mediaMessage",
+    label: "Media Buttons",
+    description: "Send media with buttons",
+    icon: <Image className="w-4 h-4" />,
+    category: "message",
     defaultData: {},
   },
   {
-    type: 'buttonMessage',
-    label: 'Button Message',
-    description: 'Message with quick reply buttons',
-    icon: <MousePointerClick className="w-5 h-5" />,
-    category: 'message',
+    type: "listMessage",
+    label: "List",
+    description: "WhatsApp list message",
+    icon: <List className="w-4 h-4" />,
+    category: "message",
     defaultData: {},
   },
   {
-    type: 'listMessage',
-    label: 'List Message',
-    description: 'WhatsApp list with sections',
-    icon: <List className="w-5 h-5" />,
-    category: 'message',
+    type: "userInput",
+    label: "Whatsapp Forms",
+    description: "Collect user information",
+    icon: <FormInput className="w-4 h-4" />,
+    category: "message",
     defaultData: {},
   },
   {
-    type: 'templateMessage',
-    label: 'Template Message',
-    description: 'Official WhatsApp template',
-    icon: <FileText className="w-5 h-5" />,
-    category: 'message',
+    type: "buttonMessage",
+    label: "Catalogue Message",
+    description: "Product catalogue",
+    icon: <ShoppingCart className="w-4 h-4" />,
+    category: "message",
     defaultData: {},
   },
   {
-    type: 'mediaMessage',
-    label: 'Media Message',
-    description: 'Send image, video, or document',
-    icon: <Image className="w-5 h-5" />,
-    category: 'message',
+    type: "templateMessage",
+    label: "Single Product",
+    description: "Single product message",
+    icon: <Package className="w-4 h-4" />,
+    category: "message",
     defaultData: {},
   },
   {
-    type: 'userInput',
-    label: 'User Input',
-    description: 'Collect user input',
-    icon: <Type className="w-5 h-5" />,
-    category: 'logic',
+    type: "dynamicResponse",
+    label: "Multi Product",
+    description: "Multiple products",
+    icon: <Boxes className="w-4 h-4" />,
+    category: "message",
     defaultData: {},
   },
   {
-    type: 'condition',
-    label: 'Condition',
-    description: 'Branch based on conditions',
-    icon: <GitBranch className="w-5 h-5" />,
-    category: 'logic',
+    type: "start",
+    label: "Template",
+    description: "Message template",
+    icon: <FileText className="w-4 h-4" />,
+    category: "message",
+    defaultData: {},
+  },
+];
+
+const actionNodes: NodePaletteItem[] = [
+  {
+    type: "start",
+    label: "Start (Trigger)",
+    description: "Flow entry point",
+    icon: <Play className="w-4 h-4" />,
+    category: "control",
     defaultData: {},
   },
   {
-    type: 'apiCall',
-    label: 'API Call',
-    description: 'Call external API',
-    icon: <Globe className="w-5 h-5" />,
-    category: 'integration',
+    type: "assignDepartment",
+    label: "Request Intervention",
+    description: "Request human assistance",
+    icon: <UserPlus className="w-4 h-4" />,
+    category: "logic",
     defaultData: {},
   },
   {
-    type: 'assignDepartment',
-    label: 'Assign Department',
-    description: 'Route to department',
-    icon: <Users className="w-5 h-5" />,
-    category: 'logic',
+    type: "apiCall",
+    label: "Meta Conversions Api",
+    description: "Track conversions",
+    icon: <BarChart3 className="w-4 h-4" />,
+    category: "integration",
     defaultData: {},
   },
   {
-    type: 'delay',
-    label: 'Delay',
-    description: 'Wait before next step',
-    icon: <Clock className="w-5 h-5" />,
-    category: 'control',
+    type: "condition",
+    label: "Condition",
+    description: "Conditional branching",
+    icon: <GitBranch className="w-4 h-4" />,
+    category: "logic",
     defaultData: {},
   },
   {
-    type: 'dynamicResponse',
-    label: 'Dynamic Response',
-    description: 'Template with variables',
-    icon: <Sparkles className="w-5 h-5" />,
-    category: 'message',
+    type: "delay",
+    label: "Connect Flow",
+    description: "Link to another flow",
+    icon: <Workflow className="w-4 h-4" />,
+    category: "control",
     defaultData: {},
   },
   {
-    type: 'end',
-    label: 'End',
-    description: 'End the conversation',
-    icon: <StopCircle className="w-5 h-5" />,
-    category: 'control',
+    type: "userInput",
+    label: "Ask Address",
+    description: "Request address input",
+    icon: <MapPin className="w-4 h-4" />,
+    category: "logic",
+    defaultData: {},
+  },
+  {
+    type: "userInput",
+    label: "Ask Location",
+    description: "Request location",
+    icon: <MapPin className="w-4 h-4" />,
+    category: "logic",
+    defaultData: {},
+  },
+  {
+    type: "userInput",
+    label: "Ask Question",
+    description: "Ask user a question",
+    icon: <HelpCircle className="w-4 h-4" />,
+    category: "logic",
+    defaultData: {},
+  },
+  {
+    type: "mediaMessage",
+    label: "Ask Media",
+    description: "Request media upload",
+    icon: <Image className="w-4 h-4" />,
+    category: "logic",
+    defaultData: {},
+  },
+  {
+    type: "userInput",
+    label: "Ask Attribute",
+    description: "Request specific attribute",
+    icon: <Type className="w-4 h-4" />,
+    category: "logic",
+    defaultData: {},
+  },
+  {
+    type: "end",
+    label: "Add Tag",
+    description: "Tag conversation",
+    icon: <Tag className="w-4 h-4" />,
+    category: "control",
+    defaultData: {},
+  },
+  {
+    type: "apiCall",
+    label: "API Request 4/5",
+    description: "External API call",
+    icon: <Globe className="w-4 h-4" />,
+    category: "integration",
     defaultData: {},
   },
 ];
 
 function DraggableNode({ item }: { item: NodePaletteItem }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: item.type,
-  });
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: item.type,
+    });
 
   const style = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const categoryColors = {
-    message: 'bg-purple-50 border-purple-200 hover:border-purple-400 text-purple-700',
-    logic: 'bg-blue-50 border-blue-200 hover:border-blue-400 text-blue-700',
-    integration: 'bg-green-50 border-green-200 hover:border-green-400 text-green-700',
-    control: 'bg-orange-50 border-orange-200 hover:border-orange-400 text-orange-700',
+  const handleClick = () => {
+    // Dispatch custom event to add node to canvas on click
+    window.dispatchEvent(
+      new CustomEvent('node:add-from-sidebar', {
+        detail: { nodeType: item.type },
+      })
+    );
   };
 
   return (
@@ -158,123 +224,119 @@ function DraggableNode({ item }: { item: NodePaletteItem }) {
       style={style}
       {...listeners}
       {...attributes}
-      className={`p-3 border-2 rounded-lg cursor-grab active:cursor-grabbing transition-all ${
-        categoryColors[item.category]
-      }`}
+      onClick={handleClick}
+      className="flex items-center gap-2 p-2 bg-white border border-gray-200 rounded-md cursor-pointer hover:border-teal-400 hover:bg-teal-50 transition-all group active:scale-95"
     >
-      <div className="flex items-start gap-2">
-        <div className="mt-0.5">{item.icon}</div>
-        <div className="flex-1 min-w-0">
-          <div className="font-medium text-sm">{item.label}</div>
-          <div className="text-xs opacity-75 mt-0.5 line-clamp-2">{item.description}</div>
-        </div>
+      <div className="p-1.5 bg-teal-100 rounded text-teal-600 group-hover:bg-teal-200">
+        {item.icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-medium text-sm text-gray-800">{item.label}</div>
       </div>
     </div>
   );
 }
 
 export default function NodeSidebar() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  const filteredNodes = nodePalette.filter((node) => {
-    const matchesSearch =
-      node.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      node.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || node.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedSections, setExpandedSections] = useState({
+    messageTypes: true,
+    actions: true,
   });
 
-  const categories = [
-    { id: 'all', label: 'All Nodes', count: nodePalette.length },
-    { id: 'message', label: 'Messages', count: nodePalette.filter((n) => n.category === 'message').length },
-    { id: 'logic', label: 'Logic', count: nodePalette.filter((n) => n.category === 'logic').length },
-    { id: 'integration', label: 'Integration', count: nodePalette.filter((n) => n.category === 'integration').length },
-    { id: 'control', label: 'Control', count: nodePalette.filter((n) => n.category === 'control').length },
-  ];
+  const toggleSection = (section: "messageTypes" | "actions") => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
+  const filteredMessageTypes = messageTypeNodes.filter((node) =>
+    node.label.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
+  const filteredActions = actionNodes.filter((node) =>
+    node.label.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   return (
-    <div 
-      className={`bg-white border-r border-gray-200 flex flex-col h-full transition-all duration-300 ease-in-out relative ${
-        isCollapsed ? 'w-12' : 'w-80'
-      }`}
-    >
-      {/* Collapse/Expand Button */}
-      <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute -right-3 top-4 z-10 bg-white border border-gray-300 rounded-full p-1 shadow-md hover:bg-gray-50 hover:shadow-lg transition-all"
-        title={isCollapsed ? 'Expand palette' : 'Collapse palette'}
-      >
-        {isCollapsed ? (
-          <ChevronRight className="w-4 h-4 text-gray-600" />
-        ) : (
-          <ChevronLeft className="w-4 h-4 text-gray-600" />
-        )}
-      </button>
+    <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-200">
+        <h2 className="text-base font-semibold text-gray-900 mb-3">
+          Message types
+        </h2>
 
-      {!isCollapsed && (
-        <>
-          {/* Header */}
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">Node Palette</h2>
-            
-            {/* Search */}
-            <Input
-              type="text"
-              placeholder="Search nodes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="mb-3"
+        {/* Search */}
+        <Input
+          type="text"
+          placeholder="Search..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="text-sm"
+        />
+      </div>
+
+      {/* Node List */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Message Types Section */}
+        <div className="border-b border-gray-200">
+          <button
+            onClick={() => toggleSection("messageTypes")}
+            className="w-full px-4 py-2 flex items-center justify-between hover:bg-gray-50 transition-colors"
+          >
+            <span className="text-sm font-medium text-gray-700">
+              Message types
+            </span>
+            <ChevronRight
+              className={`w-4 h-4 text-gray-500 transition-transform ${
+                expandedSections.messageTypes ? "rotate-90" : ""
+              }`}
             />
-
-            {/* Category Filters */}
-            <div className="flex flex-wrap gap-2">
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                    selectedCategory === cat.id
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {cat.label} ({cat.count})
-                </button>
-              ))}
+          </button>
+          {expandedSections.messageTypes && (
+            <div className="px-3 py-2 space-y-2">
+              {filteredMessageTypes.length === 0 ? (
+                <div className="text-center text-gray-400 text-xs py-4">
+                  No nodes found
+                </div>
+              ) : (
+                filteredMessageTypes.map((item) => (
+                  <DraggableNode key={item.type + item.label} item={item} />
+                ))
+              )}
             </div>
-          </div>
-
-          {/* Node List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {filteredNodes.length === 0 ? (
-              <div className="text-center text-gray-500 text-sm py-8">
-                No nodes found matching "{searchQuery}"
-              </div>
-            ) : (
-              filteredNodes.map((item) => <DraggableNode key={item.type} item={item} />)
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="p-4 border-t border-gray-200 bg-gray-50">
-            <div className="text-xs text-gray-600">
-              <p className="font-medium mb-1">💡 Quick Tip</p>
-              <p>Drag nodes onto the canvas to build your flow. Connect them by dragging from one node's edge to another.</p>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Collapsed State - Vertical Text */}
-      {isCollapsed && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="transform -rotate-90 whitespace-nowrap">
-            <span className="text-sm font-semibold text-gray-600">Node Palette</span>
-          </div>
+          )}
         </div>
-      )}
+
+        {/* Actions Section */}
+        <div>
+          <button
+            onClick={() => toggleSection("actions")}
+            className="w-full px-4 py-2 flex items-center justify-between hover:bg-gray-50 transition-colors"
+          >
+            <span className="text-sm font-medium text-gray-700">Actions</span>
+            <ChevronRight
+              className={`w-4 h-4 text-gray-500 transition-transform ${
+                expandedSections.actions ? "rotate-90" : ""
+              }`}
+            />
+          </button>
+          {expandedSections.actions && (
+            <div className="px-3 py-2 space-y-2">
+              {filteredActions.length === 0 ? (
+                <div className="text-center text-gray-400 text-xs py-4">
+                  No nodes found
+                </div>
+              ) : (
+                filteredActions.map((item) => (
+                  <DraggableNode key={item.type + item.label} item={item} />
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

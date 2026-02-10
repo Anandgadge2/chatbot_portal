@@ -1,35 +1,68 @@
 'use client';
 
 import { memo } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
+import { NodeProps } from 'reactflow';
 import { MessageSquare } from 'lucide-react';
+import { BaseNodeWrapper, NodeField } from './BaseNodeWrapper';
+import { TextMessageNodeData } from '@/types/flowTypes';
 
-export default memo(function TextMessageNode({ data, selected }: NodeProps) {
-  const messageText = (data as any).messageText || '';
-  const preview = messageText.length > 50 ? messageText.substring(0, 50) + '...' : messageText;
+export default memo(function TextMessageNode({ data, selected, id }: NodeProps) {
+  const nodeData = data as TextMessageNodeData;
+  const messageText = nodeData.messageText || '';
+  const preview = messageText.length > 80 ? messageText.substring(0, 80) + '...' : messageText;
 
   return (
-    <div
-      className={`px-4 py-3 shadow-lg rounded-lg bg-white border-2 min-w-[200px] max-w-[300px] ${
-        selected ? 'border-purple-500' : 'border-purple-200'
-      }`}
+    <BaseNodeWrapper
+      data={nodeData}
+      selected={selected}
+      icon={<MessageSquare className="w-4 h-4" />}
+      color="purple"
+      preview={preview}
+      onDelete={() => {
+        // Dispatch custom event for deletion
+        window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));
+      }}
+      onDuplicate={() => {
+        window.dispatchEvent(new CustomEvent('node:duplicate', { detail: { nodeId: id } }));
+      }}
+      onCopy={() => {
+        window.dispatchEvent(new CustomEvent('node:copy', { detail: { nodeId: id } }));
+      }}
     >
-      <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-purple-500" />
-      
-      <div className="flex items-center gap-2 mb-2">
-        <div className="p-1.5 bg-purple-100 rounded">
-          <MessageSquare className="w-4 h-4 text-purple-600" />
-        </div>
-        <div className="font-semibold text-sm text-gray-900">{data.label}</div>
-      </div>
-      
-      {messageText && (
-        <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded border border-gray-200 font-mono">
-          {preview}
-        </div>
-      )}
-      
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-purple-500" />
-    </div>
+      <NodeField label="Message Text">
+        <textarea
+          value={messageText}
+          onChange={(e) => {
+            window.dispatchEvent(
+              new CustomEvent('node:update', {
+                detail: { nodeId: id, data: { messageText: e.target.value } },
+              })
+            );
+          }}
+          className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+          rows={4}
+          placeholder="Enter your message..."
+        />
+      </NodeField>
+
+      <NodeField label="Language">
+        <select
+          value={nodeData.language || 'en'}
+          onChange={(e) => {
+            window.dispatchEvent(
+              new CustomEvent('node:update', {
+                detail: { nodeId: id, data: { language: e.target.value } },
+              })
+            );
+          }}
+          className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+        >
+          <option value="en">English</option>
+          <option value="hi">Hindi</option>
+          <option value="or">Oriya</option>
+          <option value="mr">Marathi</option>
+        </select>
+      </NodeField>
+    </BaseNodeWrapper>
   );
 });

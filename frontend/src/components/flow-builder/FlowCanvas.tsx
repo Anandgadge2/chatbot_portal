@@ -52,12 +52,102 @@ const nodeTypes = {
   start: StartNode,
 };
 
-export default function FlowCanvas() {
+interface FlowCanvasProps {
+  initialNodes?: FlowNode[];
+  initialEdges?: FlowEdge[];
+  onSave?: (nodes: FlowNode[], edges: FlowEdge[]) => void;
+}
+
+interface HistoryState {
+  nodes: FlowNode[];
+  edges: FlowEdge[];
+}
+
+export default function FlowCanvas({ initialNodes = [], initialEdges = [], onSave }: FlowCanvasProps = {}) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNode, setSelectedNode] = useState<FlowNode | null>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  
+  // Undo/Redo state
+  const [history, setHistory] = useState<HistoryState[]>([{ nodes: initialNodes, edges: initialEdges }]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  // Save to history whenever nodes or edges change
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setHistory(prev => {
+        const newHistory = prev.slice(0, historyIndex + 1);
+        newHistory.push({ nodes: nodes as FlowNode[], edges: edges as FlowEdge[] });
+        // Keep max 50 history states
+        if (newHistory.length > 50) newHistory.shift();
+        return newHistory;
+      });
+      setHistoryIndex(prev => Math.min(prev + 1, 49));
+    }, 500); // Debounce 500ms
+
+    return () => clearTimeout(timeoutId);
+  }, [nodes, edges]);
+
+  // Undo function
+  const handleUndo = useCallback(() => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      const state = history[newIndex];
+      setNodes(state.nodes);
+      setEdges(state.edges);
+      setHistoryIndex(newIndex);
+      toast.success('Undo');
+    }
+  }, [historyIndex, history, setNodes, setEdges]);
+
+  // Redo function
+  const handleRedo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      const state = history[newIndex];
+      setNodes(state.nodes);
+      setEdges(state.edges);
+      setHistoryIndex(newIndex);
+      toast.success('Redo');
+    }
+  }, [historyIndex, history, setNodes, setEdges]);
+
+  // Expose save method via window event
+  useEffect(() => {
+    const handleSaveRequest = () => {
+      if (onSave) {
+        onSave(nodes as FlowNode[], edges as FlowEdge[]);
+      }
+      // Also dispatch event with data for other listeners
+      window.dispatchEvent(
+        new CustomEvent('flow:data', {
+          detail: { nodes, edges },
+        })
+      );
+    };
+
+    window.addEventListener('flow:save', handleSaveRequest);
+    return () => window.removeEventListener('flow:save', handleSaveRequest);
+  }, [nodes, edges, onSave]);
+
+  // Listen for toast events from nodes
+  useEffect(() => {
+    const handleToast = (event: any) => {
+      const { type, message } = event.detail;
+      if (type === 'error') {
+        toast.error(message);
+      } else if (type === 'success') {
+        toast.success(message);
+      } else {
+        toast(message);
+      }
+    };
+
+    window.addEventListener('show:toast', handleToast);
+    return () => window.removeEventListener('show:toast', handleToast);
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -184,7 +274,7 @@ export default function FlowCanvas() {
     [setNodes]
   );
 
-  // Delete selected node
+  // Delete node
   const deleteNode = useCallback(
     (nodeId: string) => {
       setNodes((nds) => nds.filter((node) => node.id !== nodeId));
@@ -193,6 +283,41 @@ export default function FlowCanvas() {
       toast.success('Node deleted');
     },
     [setNodes, setEdges]
+  );
+
+  // Duplicate node
+  const duplicateNode = useCallback(
+    (nodeId: string) => {
+      const nodeToDuplicate = nodes.find((n) => n.id === nodeId) as FlowNode;
+      if (!nodeToDuplicate) return;
+
+      const newNode: FlowNode = {
+        ...nodeToDuplicate,
+        id: generateNodeId(nodeToDuplicate.type),
+        type: nodeToDuplicate.type,
+        position: {
+          x: nodeToDuplicate.position.x + 50,
+          y: nodeToDuplicate.position.y + 50,
+        },
+        data: { ...nodeToDuplicate.data },
+      };
+
+      setNodes((nds) => [...nds, newNode]);
+      toast.success('Node duplicated');
+    },
+    [nodes, setNodes]
+  );
+
+  // Copy node to clipboard
+  const copyNode = useCallback(
+    (nodeId: string) => {
+      const nodeToCopy = nodes.find((n) => n.id === nodeId);
+      if (!nodeToCopy) return;
+
+      localStorage.setItem('copiedNode', JSON.stringify(nodeToCopy));
+      toast.success('Node copied to clipboard');
+    },
+    [nodes]
   );
 
   // Validate flow
@@ -226,6 +351,67 @@ export default function FlowCanvas() {
     }
   }, [nodes, edges]);
 
+  // Event listeners for node actions
+  useEffect(() => {
+    const handleNodeUpdate = (event: any) => {
+      const { nodeId, data } = event.detail;
+      updateNodeData(nodeId, data);
+    };
+
+    const handleNodeDelete = (event: any) => {
+      const { nodeId } = event.detail;
+      deleteNode(nodeId);
+    };
+
+    const handleNodeDuplicate = (event: any) => {
+      const { nodeId } = event.detail;
+      duplicateNode(nodeId);
+    };
+
+    const handleNodeCopy = (event: any) => {
+      const { nodeId } = event.detail;
+      copyNode(nodeId);
+    };
+
+    const handleAddFromSidebar = (event: any) => {
+      const { nodeType } = event.detail;
+      
+      if (!reactFlowInstance) return;
+
+      // Get the center of the visible viewport
+      const { x, y, zoom } = reactFlowInstance.getViewport();
+      const canvasCenter = reactFlowInstance.project({
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+      });
+
+      // Create new node at center of viewport
+      const newNode: FlowNode = {
+        id: generateNodeId(nodeType),
+        type: nodeType,
+        position: canvasCenter,
+        data: getDefaultNodeData(nodeType),
+      };
+
+      setNodes((nds) => nds.concat(newNode));
+      toast.success(`${nodeType} node added to canvas`);
+    };
+
+    window.addEventListener('node:update', handleNodeUpdate);
+    window.addEventListener('node:delete', handleNodeDelete);
+    window.addEventListener('node:duplicate', handleNodeDuplicate);
+    window.addEventListener('node:copy', handleNodeCopy);
+    window.addEventListener('node:add-from-sidebar', handleAddFromSidebar);
+
+    return () => {
+      window.removeEventListener('node:update', handleNodeUpdate);
+      window.removeEventListener('node:delete', handleNodeDelete);
+      window.removeEventListener('node:duplicate', handleNodeDuplicate);
+      window.removeEventListener('node:copy', handleNodeCopy);
+      window.removeEventListener('node:add-from-sidebar', handleAddFromSidebar);
+    };
+  }, [updateNodeData, deleteNode, duplicateNode, copyNode, reactFlowInstance, setNodes]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -237,14 +423,12 @@ export default function FlowCanvas() {
       // Ctrl+Z - Undo
       if (event.ctrlKey && event.key === 'z' && !event.shiftKey) {
         event.preventDefault();
-        // Trigger undo via custom event
         window.dispatchEvent(new CustomEvent('flowbuilder:undo'));
       }
 
       // Ctrl+Y or Ctrl+Shift+Z - Redo
       if ((event.ctrlKey && event.key === 'y') || (event.ctrlKey && event.shiftKey && event.key === 'z')) {
         event.preventDefault();
-        // Trigger redo via custom event
         window.dispatchEvent(new CustomEvent('flowbuilder:redo'));
       }
 
@@ -328,17 +512,6 @@ export default function FlowCanvas() {
           </div>
         </div>
 
-        {/* Right Sidebar - Node Configuration */}
-        {selectedNode && (
-          <div className="flex-shrink-0 h-full overflow-y-auto">
-            <NodeConfigPanel
-              node={selectedNode}
-              onUpdate={(data: any) => updateNodeData(selectedNode.id, data)}
-              onDelete={() => deleteNode(selectedNode.id)}
-              onClose={() => setSelectedNode(null)}
-            />
-          </div>
-        )}
       </div>
     </DndContext>
   );

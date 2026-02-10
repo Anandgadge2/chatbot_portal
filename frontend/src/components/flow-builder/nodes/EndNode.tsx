@@ -1,32 +1,63 @@
 'use client';
 
 import { memo } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
+import { NodeProps } from 'reactflow';
 import { StopCircle } from 'lucide-react';
+import { BaseNodeWrapper, NodeField } from './BaseNodeWrapper';
+import { EndNodeData } from '@/types/flowTypes';
 
-export default memo(function EndNode({ data, selected }: NodeProps) {
-  const endMessage = (data as any).endMessage || '';
+export default memo(function EndNode({ data, selected, id }: NodeProps) {
+  const nodeData = data as EndNodeData;
+  const endMessage = nodeData.endMessage || '';
 
   return (
-    <div
-      className={`px-4 py-3 shadow-lg rounded-lg bg-white border-2 min-w-[200px] max-w-[300px] ${
-        selected ? 'border-red-500' : 'border-red-200'
-      }`}
+    <BaseNodeWrapper
+      data={nodeData}
+      selected={selected}
+      icon={<StopCircle className="w-4 h-4" />}
+      color="red"
+      preview={endMessage}
+      onDelete={() => {
+        window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));
+      }}
+      onDuplicate={() => {
+        window.dispatchEvent(new CustomEvent('node:duplicate', { detail: { nodeId: id } }));
+      }}
+      onCopy={() => {
+        window.dispatchEvent(new CustomEvent('node:copy', { detail: { nodeId: id } }));
+      }}
     >
-      <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-red-500" />
-      
-      <div className="flex items-center gap-2 mb-2">
-        <div className="p-1.5 bg-red-100 rounded">
-          <StopCircle className="w-4 h-4 text-red-600" />
-        </div>
-        <div className="font-semibold text-sm text-gray-900">{data.label}</div>
+      <NodeField label="End Message">
+        <textarea
+          value={endMessage}
+          onChange={(e) => {
+            window.dispatchEvent(
+              new CustomEvent('node:update', {
+                detail: { nodeId: id, data: { endMessage: e.target.value } },
+              })
+            );
+          }}
+          className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+          rows={3}
+          placeholder="Thank you message..."
+        />
+      </NodeField>
+
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={nodeData.clearSession || false}
+          onChange={(e) => {
+            window.dispatchEvent(
+              new CustomEvent('node:update', {
+                detail: { nodeId: id, data: { clearSession: e.target.checked } },
+              })
+            );
+          }}
+          className="w-3 h-3 text-red-600 border-gray-300 rounded focus:ring-red-500"
+        />
+        <label className="text-xs text-gray-700">Clear Session</label>
       </div>
-      
-      {endMessage && (
-        <div className="text-xs text-gray-600 bg-red-50 border border-red-200 p-2 rounded">
-          {endMessage.length > 50 ? endMessage.substring(0, 50) + '...' : endMessage}
-        </div>
-      )}
-    </div>
+    </BaseNodeWrapper>
   );
 });

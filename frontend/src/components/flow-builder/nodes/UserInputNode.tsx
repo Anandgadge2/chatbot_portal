@@ -1,40 +1,112 @@
 'use client';
 
 import { memo } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
+import { NodeProps } from 'reactflow';
 import { Type } from 'lucide-react';
+import { BaseNodeWrapper, NodeField } from './BaseNodeWrapper';
+import { UserInputNodeData } from '@/types/flowTypes';
 
-export default memo(function UserInputNode({ data, selected }: NodeProps) {
-  const inputType = (data as any).inputType || 'text';
-  const saveToField = (data as any).saveToField || '';
-  const required = (data as any).validation?.required || false;
+export default memo(function UserInputNode({ data, selected, id }: NodeProps) {
+  const nodeData = data as UserInputNodeData;
+  const inputType = nodeData.inputType || 'text';
+  const saveToField = nodeData.saveToField || '';
+  const preview = `Collect ${inputType} → ${saveToField}`;
 
   return (
-    <div
-      className={`px-4 py-3 shadow-lg rounded-lg bg-white border-2 min-w-[200px] max-w-[300px] ${
-        selected ? 'border-blue-500' : 'border-blue-200'
-      }`}
+    <BaseNodeWrapper
+      data={nodeData}
+      selected={selected}
+      icon={<Type className="w-4 h-4" />}
+      color="green"
+      preview={preview}
+      onDelete={() => {
+        window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));
+      }}
+      onDuplicate={() => {
+        window.dispatchEvent(new CustomEvent('node:duplicate', { detail: { nodeId: id } }));
+      }}
+      onCopy={() => {
+        window.dispatchEvent(new CustomEvent('node:copy', { detail: { nodeId: id } }));
+      }}
     >
-      <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-blue-500" />
-      
-      <div className="flex items-center gap-2 mb-2">
-        <div className="p-1.5 bg-blue-100 rounded">
-          <Type className="w-4 h-4 text-blue-600" />
-        </div>
-        <div className="font-semibold text-sm text-gray-900">{data.label}</div>
+      <NodeField label="Input Type">
+        <select
+          value={inputType}
+          onChange={(e) => {
+            window.dispatchEvent(
+              new CustomEvent('node:update', {
+                detail: { nodeId: id, data: { inputType: e.target.value } },
+              })
+            );
+          }}
+          className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
+          <option value="text">Text</option>
+          <option value="number">Number</option>
+          <option value="email">Email</option>
+          <option value="phone">Phone</option>
+          <option value="date">Date</option>
+          <option value="image">Image</option>
+          <option value="document">Document</option>
+          <option value="location">Location</option>
+        </select>
+      </NodeField>
+
+      <NodeField label="Save To Field">
+        <input
+          type="text"
+          value={saveToField}
+          onChange={(e) => {
+            window.dispatchEvent(
+              new CustomEvent('node:update', {
+                detail: { nodeId: id, data: { saveToField: e.target.value } },
+              })
+            );
+          }}
+          className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+          placeholder="e.g., userName"
+        />
+      </NodeField>
+
+      <NodeField label="Placeholder">
+        <input
+          type="text"
+          value={nodeData.placeholder || ''}
+          onChange={(e) => {
+            window.dispatchEvent(
+              new CustomEvent('node:update', {
+                detail: { nodeId: id, data: { placeholder: e.target.value } },
+              })
+            );
+          }}
+          className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+          placeholder="Placeholder text..."
+        />
+      </NodeField>
+
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={nodeData.validation?.required || false}
+          onChange={(e) => {
+            window.dispatchEvent(
+              new CustomEvent('node:update', {
+                detail: {
+                  nodeId: id,
+                  data: {
+                    validation: {
+                      ...nodeData.validation,
+                      required: e.target.checked,
+                    },
+                  },
+                },
+              })
+            );
+          }}
+          className="w-3 h-3 text-green-600 border-gray-300 rounded focus:ring-green-500"
+        />
+        <label className="text-xs text-gray-700">Required</label>
       </div>
-      
-      <div className="space-y-1">
-        <div className="text-xs bg-blue-50 border border-blue-200 rounded px-2 py-1.5">
-          <div className="font-medium text-blue-700">Type: {inputType}</div>
-          {saveToField && <div className="text-gray-600">Save to: {saveToField}</div>}
-        </div>
-        {required && (
-          <div className="text-xs text-red-600 font-medium">* Required</div>
-        )}
-      </div>
-      
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-blue-500" />
-    </div>
+    </BaseNodeWrapper>
   );
 });
