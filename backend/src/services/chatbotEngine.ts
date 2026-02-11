@@ -2090,9 +2090,9 @@ async function continueAppointmentFlow(
       // Show confirmation
       const confirmDate = new Date(session.data.appointmentDate);
       const dateDisplay = confirmDate.toLocaleDateString(session.language === 'en' ? 'en-IN' : session.language === 'hi' ? 'hi-IN' : 'mr-IN', { 
-        weekday: 'long', 
+        weekday: 'short', 
         year: 'numeric', 
-        month: 'long', 
+        month: 'short', 
         day: 'numeric' 
       });
       
@@ -2175,9 +2175,9 @@ async function continueAppointmentFlow(
         console.log('⚠️ Invalid confirmation input, asking again');
         const confirmDate = new Date(session.data.appointmentDate);
         const dateDisplay = confirmDate.toLocaleDateString(session.language === 'en' ? 'en-IN' : session.language === 'hi' ? 'hi-IN' : 'mr-IN', { 
-          weekday: 'long', 
+          weekday: 'short', 
           year: 'numeric', 
-          month: 'long', 
+          month: 'short', 
           day: 'numeric' 
         });
         
@@ -2278,9 +2278,9 @@ async function createAppointment(
     });
     
     const dateDisplay = appointmentDate.toLocaleDateString(session.language === 'en' ? 'en-IN' : session.language === 'hi' ? 'hi-IN' : 'mr-IN', { 
-      weekday: 'long', 
+      weekday: 'short', 
       year: 'numeric', 
-      month: 'long', 
+      month: 'short', 
       day: 'numeric' 
     });
     

@@ -2011,10 +2011,10 @@ function DashboardContent() {
                     </div>
                     <div>
                       <CardTitle className="text-xl font-bold text-white">
-                        {grievanceFilters.status === 'RESOLVED' ? 'Resolved Grievances' : grievanceFilters.status === 'REJECTED' ? 'Rejected Grievances' : grievanceFilters.status === 'CLOSED' ? 'Closed Grievances' : 'Active Grievances'}
+                        {grievanceFilters.status === 'RESOLVED' ? 'Resolved Grievances' : grievanceFilters.status === 'REJECTED' ? 'Rejected Grievances' : 'Active Grievances'}
                       </CardTitle>
                       <CardDescription className="text-white/80 mt-0.5">
-                        {grievanceFilters.status === 'RESOLVED' ? 'View all resolved grievances' : grievanceFilters.status === 'REJECTED' ? 'View all rejected grievances' : grievanceFilters.status === 'CLOSED' ? 'View all closed grievances' : 'View and manage pending and in-progress grievances'}
+                        {grievanceFilters.status === 'RESOLVED' ? 'View all resolved grievances' : grievanceFilters.status === 'REJECTED' ? 'View all rejected grievances' : 'View and manage pending and in-progress grievances'}
                       </CardDescription>
                     </div>
                   </div>
@@ -2097,7 +2097,6 @@ function DashboardContent() {
                     <option value="ASSIGNED">👤 Assigned</option>
                     <option value="RESOLVED">✅ Resolved</option>
                     <option value="REJECTED">❌ Rejected</option>
-                    <option value="CLOSED">🔒 Closed</option>
                   </select>
 
                   {/* Department Filter */}
@@ -2368,11 +2367,11 @@ function DashboardContent() {
                                   setSelectedGrievanceForStatus(grievance);
                                   setShowGrievanceStatusModal(true);
                                 }}
-                                disabled={grievance.status === 'RESOLVED' || grievance.status === 'CLOSED' || grievance.status === 'REJECTED' || updatingGrievanceStatus.has(grievance._id)}
+                                disabled={grievance.status === 'RESOLVED' || grievance.status === 'REJECTED' || updatingGrievanceStatus.has(grievance._id)}
                                 className={`px-3 py-1.5 text-[10px] font-bold border border-gray-200 rounded bg-white hover:border-purple-400 hover:bg-purple-50 focus:outline-none focus:ring-1 focus:ring-purple-500 uppercase tracking-tight transition-all ${
                                   updatingGrievanceStatus.has(grievance._id) ? 'opacity-50 cursor-wait' : ''
                                 } ${
-                                  (grievance.status === 'RESOLVED' || grievance.status === 'CLOSED' || grievance.status === 'REJECTED') ? 'opacity-60 cursor-not-allowed' : ''
+                                  (grievance.status === 'RESOLVED' || grievance.status === 'REJECTED') ? 'opacity-60 cursor-not-allowed' : ''
                                 }`}
                               >
                                 {grievance.status}
@@ -2418,7 +2417,7 @@ function DashboardContent() {
                             <td className="px-4 py-4">
                               <div className="flex items-center justify-center space-x-1">
                                 {/* Hide assign button for operators and for resolved/closed grievances */}
-                                {!isOperator && grievance.status !== 'RESOLVED' && grievance.status !== 'CLOSED' && grievance.status !== 'REJECTED' && (
+                                {!isOperator && grievance.status !== 'RESOLVED' && grievance.status !== 'REJECTED' && (
                                 <Button
                                   variant="ghost"
                                   size="sm"

@@ -186,7 +186,7 @@ export async function notifyDepartmentAdminOnCreation(
         const createdAt = data.createdAt || new Date();
         const formattedDate = new Date(createdAt).toLocaleString('en-IN', {
           day: '2-digit',
-          month: 'long',
+          month: 'short',
           year: 'numeric',
           hour: '2-digit',
           minute: '2-digit',
@@ -270,7 +270,7 @@ export async function notifyDepartmentAdminOnCreation(
     const createdAt = data.createdAt || new Date();
     const formattedDate = new Date(createdAt).toLocaleString('en-IN', {
       day: '2-digit',
-      month: 'long',
+      month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
@@ -366,7 +366,7 @@ export async function notifyUserOnAssignment(
     const assignedAt = data.assignedAt || new Date();
     const formattedDate = new Date(assignedAt).toLocaleString('en-IN', {
       day: '2-digit',
-      month: 'long',
+      month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
@@ -471,7 +471,7 @@ export async function notifyCitizenOnResolution(
     const resolvedAt = data.resolvedAt || new Date();
     const formattedResolvedDate = new Date(resolvedAt).toLocaleString('en-IN', {
       day: '2-digit',
-      month: 'long',
+      month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
@@ -666,7 +666,7 @@ export async function notifyHierarchyOnStatusChange(
     const resolvedAt = data.resolvedAt || new Date();
     const formattedResolvedDate = new Date(resolvedAt).toLocaleString('en-IN', {
       day: '2-digit',
-      month: 'long',
+      month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',

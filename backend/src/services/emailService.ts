@@ -193,7 +193,7 @@ function formatDateTime(date: Date | string | undefined): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   return d.toLocaleString('en-IN', {
     day: '2-digit',
-    month: 'long',
+    month: 'short',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
@@ -209,7 +209,7 @@ function formatDate(date: Date | string | undefined): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   return d.toLocaleDateString('en-IN', {
     day: '2-digit',
-    month: 'long',
+    month: 'short',
     year: 'numeric'
   });
 }
