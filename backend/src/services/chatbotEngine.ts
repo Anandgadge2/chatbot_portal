@@ -2107,7 +2107,7 @@ async function continueAppointmentFlow(
       
       const confirmMessage = `${getTranslation('appointmentConfirm', session.language)}\n\n` +
         `*${getTranslation('label_citizen', session.language)}:* ${session.data.citizenName}\n` +
-        `*${getTranslation('label_department', session.language)}:* CEO - Zilla Parishad Amravati\n` +
+        `*${getTranslation('label_department', session.language)}:* Collectorate Jharsugda Office\n` +
         `*${getTranslation('label_purpose', session.language)}:* ${session.data.purpose}\n` +
         `*${getTranslation('label_date', session.language)}:* ${dateDisplay}\n` +
         `*${getTranslation('label_time', session.language)}:* ${timeDisplay}\n\n` +
@@ -2192,7 +2192,7 @@ async function continueAppointmentFlow(
         
         const confirmMessage = `${getTranslation('appointmentConfirm', session.language)}\n\n` +
           `*${getTranslation('label_citizen', session.language)}:* ${session.data.citizenName}\n` +
-          `*${getTranslation('label_department', session.language)}:* CEO - Zilla Parishad Amravati\n` +
+          `*${getTranslation('label_department', session.language)}:* Collectorate Jharsugda Office\n` +
           `*${getTranslation('label_purpose', session.language)}:* ${session.data.purpose}\n` +
           `*${getTranslation('label_date', session.language)}:* ${dateDisplay}\n` +
           `*${getTranslation('label_time', session.language)}:* ${timeDisplay}\n\n` +
@@ -2434,7 +2434,7 @@ async function handleStatusTracking(
     };
 
     // Appointment is for CEO - no department
-    const deptName = 'CEO - Zilla Parishad Amravati';
+    const deptName = 'Collectorate Jharsugda Office';
 
     await sendWhatsAppMessage(
       company,

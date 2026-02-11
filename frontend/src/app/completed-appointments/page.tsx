@@ -360,12 +360,12 @@ export default function CompletedAppointmentsPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col space-y-1">
-                            <span className="text-sm font-semibold text-gray-900">
-                              CEO - Zilla Parishad Amravati
+                        <td className="px-6 py-4 text-left">
+                          <div className="flex flex-col space-y-1 min-w-[200px] max-w-md">
+                            <span className="text-sm font-semibold text-gray-900 whitespace-normal break-words">
+                              Collectorate Jharsugda Office
                             </span>
-                            <span className="text-xs text-gray-600 line-clamp-2 max-w-xs">
+                            <span className="text-xs text-gray-600 whitespace-normal break-words">
                               {appointment.purpose || 'No purpose provided'}
                             </span>
                           </div>

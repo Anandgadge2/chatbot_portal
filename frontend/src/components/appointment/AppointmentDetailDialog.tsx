@@ -140,36 +140,7 @@ const AppointmentDetailDialog: React.FC<AppointmentDetailDialogProps> = ({ isOpe
         {/* Scrollable Content */}
         <div className="overflow-y-auto flex-1 p-5 space-y-5">
           {/* Quick Info Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3 border border-blue-100">
-              <div className="flex items-center gap-2 mb-1.5">
-                <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <User className="w-3.5 h-3.5 text-blue-600" />
-                </div>
-                <span className="text-[10px] font-bold text-blue-600 uppercase">Citizen</span>
-              </div>
-              <p className="text-sm font-bold text-gray-900 truncate" title={appointment.citizenName}>{appointment.citizenName}</p>
-            </div>
-
-            <div className="bg-gradient-to-br from-purple-50 to-fuchsia-50 rounded-xl p-3 border border-purple-100 group relative">
-              <div className="flex items-center gap-2 mb-1.5">
-                <div className="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Target className="w-3.5 h-3.5 text-purple-600" />
-                </div>
-                <span className="text-[10px] font-bold text-purple-600 uppercase">Purpose</span>
-              </div>
-              <p className="text-sm font-bold text-gray-900 truncate" title={appointment.purpose}>
-                {appointment.purpose}
-              </p>
-              {/* Tooltip for full purpose */}
-              {appointment.purpose && appointment.purpose.length > 15 && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-9999 pointer-events-none shadow-lg">
-                  {appointment.purpose}
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                </div>
-              )}
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-3 border border-emerald-100">
               <div className="flex items-center gap-2 mb-1.5">
                 <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -199,7 +170,7 @@ const AppointmentDetailDialog: React.FC<AppointmentDetailDialogProps> = ({ isOpe
               </h3>
             </div>
             <div className="p-5">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
                   <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
                     <User className="w-5 h-5 text-blue-600" />
@@ -219,18 +190,6 @@ const AppointmentDetailDialog: React.FC<AppointmentDetailDialogProps> = ({ isOpe
                     <p className="text-sm font-bold text-slate-800">{appointment.citizenPhone}</p>
                   </div>
                 </div>
-
-                {appointment.citizenWhatsApp && (
-                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <MessageCircle className="w-5 h-5 text-emerald-600" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">WhatsApp</p>
-                      <p className="text-sm font-bold text-slate-800">{appointment.citizenWhatsApp}</p>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
