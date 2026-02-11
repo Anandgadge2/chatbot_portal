@@ -88,17 +88,52 @@ export default function FlowSimulator({ nodes, edges, flowName, onClose }: FlowS
         })));
         break;
 
+
       case 'listMessage':
-        const listItems = (node.data as any).sections?.[0]?.rows || [];
+        const isDynamic = (node.data as any).isDynamic;
+        const dynamicSource = (node.data as any).dynamicSource;
         const listMsg = (node.data as any).messageText || 'Please select from the list:';
-        addMessage('bot', listMsg, listItems.map((item: any, idx: number) => ({
-          text: item.title,
-          id: `list-${idx}`,
-        })));
+        
+        if (isDynamic && dynamicSource === 'departments') {
+          // Fetch departments from API
+          try {
+            const response = await fetch('/api/departments');
+            if (response.ok) {
+              const departments = await response.json();
+              const dynamicItems = departments.map((dept: any, idx: number) => ({
+                text: dept.name,
+                id: `list-${idx}`,
+              }));
+              addMessage('bot', listMsg, dynamicItems);
+            } else {
+              // Fallback to static data if API fails
+              const listItems = (node.data as any).sections?.[0]?.rows || [];
+              addMessage('bot', listMsg, listItems.map((item: any, idx: number) => ({
+                text: item.title,
+                id: `list-${idx}`,
+              })));
+            }
+          } catch (error) {
+            console.error('Error fetching departments:', error);
+            // Fallback to static data
+            const listItems = (node.data as any).sections?.[0]?.rows || [];
+            addMessage('bot', listMsg, listItems.map((item: any, idx: number) => ({
+              text: item.title,
+              id: `list-${idx}`,
+            })));
+          }
+        } else {
+          // Use static data from node
+          const listItems = (node.data as any).sections?.[0]?.rows || [];
+          addMessage('bot', listMsg, listItems.map((item: any, idx: number) => ({
+            text: item.title,
+            id: `list-${idx}`,
+          })));
+        }
         break;
 
       case 'userInput':
-        const inputPrompt = (node.data as any).promptMessage || 'Please enter your response:';
+        const inputPrompt = (node.data as any).messageText || 'Please enter your response:';
         addMessage('bot', inputPrompt);
         // Wait for user input
         break;

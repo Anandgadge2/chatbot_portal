@@ -29,6 +29,7 @@ import AssignmentDialog from '@/components/assignment/AssignmentDialog';
 import StatusUpdateModal from '@/components/grievance/StatusUpdateModal';
 import MetricInfoDialog, { MetricInfo } from '@/components/analytics/MetricInfoDialog';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { Pagination } from '@/components/ui/Pagination';
 import AvailabilityCalendar from '@/components/availability/AvailabilityCalendar';
 import { 
   ArrowUpDown,
@@ -182,6 +183,19 @@ function DashboardContent() {
   const [showMetricDialog, setShowMetricDialog] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<MetricInfo | null>(null);
   const [showAvailabilityCalendar, setShowAvailabilityCalendar] = useState(false);
+  
+  // Pagination State
+  const [grievancePage, setGrievancePage] = useState(1);
+  const [grievancePagination, setGrievancePagination] = useState({ total: 0, pages: 1, limit: 10 });
+  
+  const [appointmentPage, setAppointmentPage] = useState(1);
+  const [appointmentPagination, setAppointmentPagination] = useState({ total: 0, pages: 1, limit: 10 });
+  
+  const [departmentPage, setDepartmentPage] = useState(1);
+  const [departmentPagination, setDepartmentPagination] = useState({ total: 0, pages: 1, limit: 10 });
+  
+  const [userPage, setUserPage] = useState(1);
+  const [userPagination, setUserPagination] = useState({ total: 0, pages: 1, limit: 10 });
 
   // Sorting State
   const [sortConfig, setSortConfig] = useState<{
@@ -343,14 +357,11 @@ function DashboardContent() {
 
   useEffect(() => {
     if (mounted && user && user.role !== 'SUPER_ADMIN') {
-      // Prioritize dashboard stats (KPI tiles) - fetch immediately
       fetchDashboardData();
       
-      // Fetch other data in parallel (non-blocking)
-      // These can load after KPI tiles are shown
       const fetchPromises: Promise<any>[] = [
-        fetchDepartments(),
-        fetchUsers()
+        fetchDepartments(departmentPage),
+        fetchUsers(userPage)
       ];
       
       if (user.companyId && user.role === 'COMPANY_ADMIN') {
@@ -359,53 +370,63 @@ function DashboardContent() {
       
       Promise.all(fetchPromises).catch(err => console.error('Error fetching initial data:', err));
       
-      // Fetch lists separately (less critical, can load later)
       setTimeout(() => {
-        fetchGrievances();
-        fetchAppointments();
+        fetchGrievances(grievancePage);
+        fetchAppointments(appointmentPage);
       }, 100);
 
-      // Set up polling for real-time updates (every 30 seconds)
       const pollInterval = setInterval(async () => {
         try {
           const [grievanceRes, appointmentRes] = await Promise.all([
-            grievanceAPI.getAll(),
-            appointmentAPI.getAll()
+            grievanceAPI.getAll({ page: 1, limit: 10 }),
+            appointmentAPI.getAll({ page: 1, limit: 10 })
           ]);
           
           if (grievanceRes.success && prevGrievanceCount !== null) {
-            const newCount = grievanceRes.data.grievances.length;
+            const newCount = grievanceRes.data.pagination.total;
             if (newCount > prevGrievanceCount) {
               toast.success(`📋 New grievance received! (${newCount - prevGrievanceCount} new)`, { duration: 4000 });
-              fetchDashboardData(); // Refresh analytics
+              fetchDashboardData();
             }
             setPrevGrievanceCount(newCount);
-            // Include all grievances - filtering will be handled by the filter state
-            setGrievances(grievanceRes.data.grievances);
+            if (grievancePage === 1) {
+              setGrievances(grievanceRes.data.grievances);
+              setGrievancePagination(prev => ({
+                ...prev,
+                total: grievanceRes.data.pagination.total,
+                pages: grievanceRes.data.pagination.pages
+              }));
+            }
           } else if (grievanceRes.success) {
-            setPrevGrievanceCount(grievanceRes.data.grievances.length);
+            setPrevGrievanceCount(grievanceRes.data.pagination.total);
           }
           
           if (appointmentRes.success && prevAppointmentCount !== null) {
-            const newCount = appointmentRes.data.appointments.length;
+            const newCount = appointmentRes.data.pagination.total;
             if (newCount > prevAppointmentCount) {
               toast.success(`📅 New appointment scheduled! (${newCount - prevAppointmentCount} new)`, { duration: 4000 });
-              fetchDashboardData(); // Refresh analytics
+              fetchDashboardData();
             }
             setPrevAppointmentCount(newCount);
-            setAppointments(appointmentRes.data.appointments);
+            if (appointmentPage === 1) {
+              setAppointments(appointmentRes.data.appointments);
+              setAppointmentPagination(prev => ({
+                ...prev,
+                total: appointmentRes.data.pagination.total,
+                pages: appointmentRes.data.pagination.pages
+              }));
+            }
           } else if (appointmentRes.success) {
-            setPrevAppointmentCount(appointmentRes.data.appointments.length);
+            setPrevAppointmentCount(appointmentRes.data.pagination.total);
           }
         } catch (error) {
           console.error('Polling error:', error);
         }
-      }, 30000); // Poll every 30 seconds
+      }, 30000);
 
       return () => clearInterval(pollInterval);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, user]);
+  }, [mounted, user, grievancePage, appointmentPage, departmentPage, userPage]);
 
   useEffect(() => {
     if (mounted && user && activeTab === 'analytics') {
@@ -477,10 +498,10 @@ function DashboardContent() {
     }
   };
 
-  const fetchDepartments = async () => {
+  const fetchDepartments = async (page = departmentPage) => {
     setLoadingDepartments(true);
     try {
-      const response = await departmentAPI.getAll();
+      const response = await departmentAPI.getAll({ page, limit: departmentPagination.limit });
       if (response.success) {
         let filteredDepartments = response.data.departments;
         
@@ -498,6 +519,11 @@ function DashboardContent() {
         }
         
         setDepartments(filteredDepartments);
+        setDepartmentPagination(prev => ({
+          ...prev,
+          total: response.data.pagination.total,
+          pages: response.data.pagination.pages
+        }));
       }
     } catch (error: any) {
       console.error('Failed to fetch departments:', error);
@@ -507,10 +533,10 @@ function DashboardContent() {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = userPage) => {
     setLoadingUsers(true);
     try {
-      const response = await userAPI.getAll();
+      const response = await userAPI.getAll({ page, limit: userPagination.limit });
       if (response.success) {
         let filteredUsers = response.data.users;
         
@@ -529,6 +555,11 @@ function DashboardContent() {
         }
         
         setUsers(filteredUsers);
+        setUserPagination(prev => ({
+          ...prev,
+          total: response.data.pagination.total,
+          pages: response.data.pagination.pages
+        }));
       }
     } catch (error: any) {
       console.error('Failed to fetch users:', error);
@@ -538,13 +569,17 @@ function DashboardContent() {
     }
   };
 
-  const fetchGrievances = async () => {
+  const fetchGrievances = async (page = grievancePage) => {
     setLoadingGrievances(true);
     try {
-      const response = await grievanceAPI.getAll({ limit: 100 });
+      const response = await grievanceAPI.getAll({ page, limit: grievancePagination.limit });
       if (response.success) {
-        // Include all grievances - filtering will be handled by the filter state
         setGrievances(response.data.grievances);
+        setGrievancePagination(prev => ({
+          ...prev,
+          total: response.data.pagination.total,
+          pages: response.data.pagination.pages
+        }));
       }
     } catch (error: any) {
       console.error('Failed to fetch grievances:', error);
@@ -554,12 +589,17 @@ function DashboardContent() {
     }
   };
 
-  const fetchAppointments = async () => {
+  const fetchAppointments = async (page = appointmentPage) => {
     setLoadingAppointments(true);
     try {
-      const response = await appointmentAPI.getAll({ limit: 50 });
+      const response = await appointmentAPI.getAll({ page, limit: appointmentPagination.limit });
       if (response.success) {
         setAppointments(response.data.appointments);
+        setAppointmentPagination(prev => ({
+          ...prev,
+          total: response.data.pagination.total,
+          pages: response.data.pagination.pages
+        }));
       }
     } catch (error: any) {
       console.error('Failed to fetch appointments:', error);
@@ -1558,7 +1598,7 @@ function DashboardContent() {
                                 <tr key={dept._id} className="hover:bg-gradient-to-r hover:from-cyan-50/50 hover:to-teal-50/50 transition-all duration-200 group/row">
                                   <td className="px-3 py-5 text-center">
                                     <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-100 to-teal-100 text-teal-700 text-xs font-bold shadow-sm">
-                                      {index + 1}
+                                      {(departmentPage - 1) * departmentPagination.limit + index + 1}
                                     </span>
                                   </td>
                                   <td className="px-6 py-5 whitespace-nowrap">
@@ -1690,6 +1730,15 @@ function DashboardContent() {
                           </table>
                           </div>
                         </div>
+                        
+                        <Pagination
+                          currentPage={departmentPage}
+                          totalPages={departmentPagination.pages}
+                          totalItems={departmentPagination.total}
+                          itemsPerPage={departmentPagination.limit}
+                          onPageChange={setDepartmentPage}
+                          className="mt-6 shadow-none border-t border-slate-100 rounded-none bg-slate-50/30"
+                        />
                       </div>
                     )}
                   </CardContent>
@@ -1794,7 +1843,7 @@ function DashboardContent() {
                               <tr key={u._id} className="hover:bg-gradient-to-r hover:from-emerald-50/50 hover:to-green-50/50 transition-all duration-200 group/row">
                                 <td className="px-3 py-5 text-center">
                                   <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-100 to-green-100 text-emerald-700 text-xs font-bold shadow-sm">
-                                    {index + 1}
+                                    {(userPage - 1) * userPagination.limit + index + 1}
                                   </span>
                                 </td>
                                 <td className="px-6 py-5 whitespace-nowrap">
@@ -1976,6 +2025,15 @@ function DashboardContent() {
                           </tbody>
                         </table>
                       </div>
+
+                      <Pagination
+                        currentPage={userPage}
+                        totalPages={userPagination.pages}
+                        totalItems={userPagination.total}
+                        itemsPerPage={userPagination.limit}
+                        onPageChange={setUserPage}
+                        className="mt-6 shadow-none border-t border-slate-100 rounded-none bg-slate-50/30"
+                      />
                     </div>
                   )}
                 </CardContent>
@@ -2306,7 +2364,7 @@ function DashboardContent() {
                             )}
                             <td className="px-3 py-4 text-center">
                               <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">
-                                {index + 1}
+                                {(grievancePage - 1) * grievancePagination.limit + index + 1}
                               </span>
                             </td>
                             <td className="px-4 py-4">
@@ -2463,6 +2521,15 @@ function DashboardContent() {
                       </tbody>
                       </table>
                     </div>
+
+                    <Pagination
+                      currentPage={grievancePage}
+                      totalPages={grievancePagination.pages}
+                      totalItems={grievancePagination.total}
+                      itemsPerPage={grievancePagination.limit}
+                      onPageChange={setGrievancePage}
+                      className="mt-6 shadow-none border-t border-slate-100 rounded-none bg-slate-50/30"
+                    />
                   </div>
                 )}
               </CardContent>
@@ -2725,7 +2792,7 @@ function DashboardContent() {
                           <tr key={appointment._id} className="hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-pink-50/50 transition-all duration-200 group/row">
                             <td className="px-3 py-4 text-center">
                               <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-700 text-xs font-bold">
-                                {index + 1}
+                                {(appointmentPage - 1) * appointmentPagination.limit + index + 1}
                               </span>
                             </td>
                             <td className="px-4 py-4">
@@ -2841,6 +2908,15 @@ function DashboardContent() {
                         </tbody>
                       </table>
                     </div>
+
+                    <Pagination
+                      currentPage={appointmentPage}
+                      totalPages={appointmentPagination.pages}
+                      totalItems={appointmentPagination.total}
+                      itemsPerPage={appointmentPagination.limit}
+                      onPageChange={setAppointmentPage}
+                      className="mt-6 shadow-none border-t border-slate-100 rounded-none bg-slate-50/30"
+                    />
                   </div>
                 )}
               </CardContent>

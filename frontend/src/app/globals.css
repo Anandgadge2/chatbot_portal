@@ -88,3 +88,44 @@
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 #f1f5f9;
 }
+
+/* React Flow Controls Styling */
+.react-flow__controls {
+  position: absolute !important;
+  background: white !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  padding: 4px !important;
+  left: 20px !important;
+  bottom: 30px !important;
+  z-index: 10 !important;
+}
+
+.react-flow__controls-button {
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 4px !important;
+  width: 32px !important;
+  height: 32px !important;
+  margin: 2px !important;
+  transition: all 0.2s ease !important;
+}
+
+.react-flow__controls-button:hover {
+  background: #f9fafb !important;
+  border-color: #14b8a6 !important;
+  transform: scale(1.05) !important;
+}
+
+.react-flow__controls-button svg {
+  width: 16px !important;
+  height: 16px !important;
+  fill: #374151 !important;
+}
+
+.react-flow__controls-button:hover svg {
+  fill: #14b8a6 !important;
+}

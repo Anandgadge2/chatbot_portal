@@ -50,21 +50,47 @@ interface NotificationData {
 
 /** Load company and attach WhatsApp config from CompanyWhatsAppConfig so notifications can be sent */
 async function getCompanyWithWhatsAppConfig(companyId: any): Promise<any | null> {
-  const id = companyId?.toString ? companyId.toString() : companyId;
-  if (!id) return null;
-  const company = await Company.findById(id);
-  if (!company) return null;
-  const config = await CompanyWhatsAppConfig.findOne({
-    companyId: company._id,
-    isActive: true
-  });
-  if (config) {
-    (company as any).whatsappConfig = {
-      phoneNumberId: config.phoneNumberId,
-      accessToken: config.accessToken
-    };
+  if (!companyId) return null;
+
+  // If companyId is already a full object with an _id, extract the ID
+  let id = companyId;
+  if (typeof companyId === 'object' && companyId !== null) {
+    id = companyId._id || id;
   }
-  return company;
+
+  // Ensure we have a string/ObjectId that Mongoose can handle
+  const finalId = id?.toString ? id.toString() : id;
+  
+  // If the string is surprisingly long, it's likely a stringified object representation
+  // which will cause a CastError. Try to avoid calling findById if it looks invalid.
+  if (!finalId || typeof finalId !== 'string' || finalId.length > 30 || finalId.includes('{')) {
+    logger.error('❌ Invalid companyId passed to getCompanyWithWhatsAppConfig:', { 
+      type: typeof companyId,
+      value: typeof companyId === 'object' ? 'Object' : companyId 
+    });
+    return null;
+  }
+
+  try {
+    const company = await Company.findById(finalId);
+    if (!company) return null;
+
+    const config = await CompanyWhatsAppConfig.findOne({
+      companyId: company._id,
+      isActive: true
+    });
+
+    if (config) {
+      (company as any).whatsappConfig = {
+        phoneNumberId: config.phoneNumberId,
+        accessToken: config.accessToken
+      };
+    }
+    return company;
+  } catch (error) {
+    logger.error('❌ Error in getCompanyWithWhatsAppConfig:', error);
+    return null;
+  }
 }
 
 function isWhatsAppEnabled(company: any): boolean {

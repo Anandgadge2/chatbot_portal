@@ -109,7 +109,17 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
  */
 router.get('/:id', authenticate, async (req: Request, res: Response) => {
   try {
-    const flow = await ChatbotFlow.findById(req.params.id)
+    const { id } = req.params;
+    const user = (req as any).user;
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid chatbot flow ID format'
+      });
+    }
+
+    const flow = await ChatbotFlow.findById(id)
       .populate('companyId', 'name companyId')
       .populate('createdBy', 'name email')
       .populate('updatedBy', 'name email');
@@ -119,6 +129,20 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
         success: false,
         message: 'Chatbot flow not found'
       });
+    }
+
+    // Check access - non-SUPER_ADMIN users can only view flows from their own company
+    if (user.role !== 'SUPER_ADMIN') {
+      const flowCompanyId = flow.companyId?._id?.toString() || flow.companyId?.toString();
+      const userCompanyId = user.companyId?.toString();
+      
+      if (flowCompanyId !== userCompanyId) {
+        logger.warn(`⚠️  Unauthorized access attempt: User ${user.userId} (Company: ${userCompanyId}) tried to access flow ${flow.flowId} (Company: ${flowCompanyId})`);
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied: You can only view flows from your own company'
+        });
+      }
     }
 
     res.json({
@@ -147,10 +171,25 @@ router.post('/', authenticate, requireSuperAdmin, async (req: Request, res: Resp
     logger.info('Request body keys:', Object.keys(req.body));
     
     // Transform frontend data to match backend model
-    const { name, description, companyId, trigger, triggers, steps, version, isActive } = req.body;
+    const { 
+      name, 
+      flowName, 
+      description, 
+      flowDescription, 
+      companyId, 
+      trigger, 
+      triggers, 
+      steps, 
+      version, 
+      isActive,
+      isPreTransformed 
+    } = req.body;
+    
+    const finalName = name || flowName;
+    const finalDescription = description || flowDescription;
     
     // Validate required fields
-    if (!name || !name.trim()) {
+    if (!finalName || !finalName.trim()) {
       logger.error('❌ Validation failed: Flow name is required');
       return res.status(400).json({
         success: false,
@@ -178,7 +217,7 @@ router.post('/', authenticate, requireSuperAdmin, async (req: Request, res: Resp
     
     // Determine flow type from name or default to 'custom'
     let flowType = 'custom';
-    const nameLower = (name || '').toLowerCase();
+    const nameLower = (finalName || '').toLowerCase();
     if (nameLower.includes('grievance')) flowType = 'grievance';
     else if (nameLower.includes('appointment')) flowType = 'appointment';
     else if (nameLower.includes('track')) flowType = 'tracking';
@@ -186,7 +225,9 @@ router.post('/', authenticate, requireSuperAdmin, async (req: Request, res: Resp
     logger.info(`✅ Flow type determined: ${flowType}`);
     
     // Transform steps to match backend model
-    const transformedSteps = steps.map((step: any, index: number) => {
+    let transformedSteps = steps;
+    if (!isPreTransformed && steps && Array.isArray(steps)) {
+      transformedSteps = steps.map((step: any, index: number) => {
       // Validate step has required fields
       if (!step.stepId || !step.stepId.toString().trim()) {
         throw new Error(`Step ${index + 1} is missing or has empty stepId`);
@@ -332,6 +373,7 @@ router.post('/', authenticate, requireSuperAdmin, async (req: Request, res: Resp
       
       return transformedStep;
     });
+    }
     
     logger.info(`✅ Transformed ${transformedSteps.length} steps`);
 
@@ -350,7 +392,9 @@ router.post('/', authenticate, requireSuperAdmin, async (req: Request, res: Resp
     // Support both old format (single trigger) and new format (triggers array)
     let transformedTriggers: any[] = [];
     
-    if (triggers && Array.isArray(triggers) && triggers.length > 0) {
+    if (isPreTransformed && triggers) {
+      transformedTriggers = triggers;
+    } else if (triggers && Array.isArray(triggers) && triggers.length > 0) {
       // New format: multiple triggers
       transformedTriggers = triggers
         .filter((t: any) => t && t.value && t.value.trim()) // Filter out empty triggers
@@ -398,8 +442,8 @@ router.post('/', authenticate, requireSuperAdmin, async (req: Request, res: Resp
     
     const flowData = {
       companyId: companyObjectId,
-      flowName: name || 'Untitled Flow',
-      flowDescription: description || '',
+      flowName: finalName || 'Untitled Flow',
+      flowDescription: finalDescription || '',
       flowType: flowType,
       startStepId: startStepId,
       steps: transformedSteps,
@@ -474,8 +518,11 @@ router.post('/', authenticate, requireSuperAdmin, async (req: Request, res: Resp
 router.put('/:id', authenticate, requireSuperAdmin, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const { name, description, companyId, triggers, steps, version, isActive } = req.body;
+    const { name, flowName, description, flowDescription, steps, version, isActive, triggers, trigger, isPreTransformed } = req.body;
     
+    const finalName = name || flowName;
+    const finalDescription = description || flowDescription;
+
     logger.info(`📝 Updating chatbot flow: ${req.params.id}`);
     
     const flow = await ChatbotFlow.findById(req.params.id);
@@ -487,7 +534,7 @@ router.put('/:id', authenticate, requireSuperAdmin, async (req: Request, res: Re
     }
 
     // Validate required fields
-    if (name !== undefined && (!name || !name.trim())) {
+    if (finalName && !finalName.trim()) {
       logger.error('❌ Validation failed: Flow name cannot be empty');
       return res.status(400).json({
         success: false,
@@ -495,9 +542,11 @@ router.put('/:id', authenticate, requireSuperAdmin, async (req: Request, res: Re
       });
     }
 
-    // Transform steps if provided (same logic as POST)
-    let transformedSteps = flow.steps; // Keep existing steps if not provided
-    if (steps && Array.isArray(steps) && steps.length > 0) {
+    // Transformation logic
+    let transformedSteps = flow.steps;
+    if (isPreTransformed && steps) {
+      transformedSteps = steps;
+    } else if (steps && Array.isArray(steps) && steps.length > 0) {
       transformedSteps = steps.map((step: any, index: number) => {
         // Validate step has required fields
         if (!step.stepId || !step.stepId.toString().trim()) {
@@ -654,7 +703,9 @@ router.put('/:id', authenticate, requireSuperAdmin, async (req: Request, res: Re
 
     // Transform triggers if provided
     let transformedTriggers = flow.triggers; // Keep existing triggers if not provided
-    if (triggers && Array.isArray(triggers) && triggers.length > 0) {
+    if (isPreTransformed && triggers) {
+      transformedTriggers = triggers;
+    } else if (triggers && Array.isArray(triggers) && triggers.length > 0) {
       const startStepId = transformedSteps.length > 0 ? transformedSteps[0].stepId : flow.startStepId;
       transformedTriggers = triggers
         .filter((t: any) => t && t.value && t.value.trim())
@@ -663,16 +714,30 @@ router.put('/:id', authenticate, requireSuperAdmin, async (req: Request, res: Re
           triggerValue: t.value.trim(),
           startStepId: t.startStepId || startStepId
         }));
+    } else if (trigger && trigger.value) { // Backward compatibility for single trigger
+      const startStepId = transformedSteps.length > 0 ? transformedSteps[0].stepId : flow.startStepId;
+      transformedTriggers = [{
+        triggerType: trigger.type === 'message' ? 'keyword' : trigger.type || 'keyword',
+        triggerValue: trigger.value.trim(),
+        startStepId: trigger.startStepId || startStepId
+      }];
     }
 
     // Update flow fields
-    if (name !== undefined) flow.flowName = name.trim();
-    if (description !== undefined) flow.flowDescription = description || '';
-    if (transformedSteps.length > 0) {
+    if (finalName !== undefined) flow.flowName = finalName.trim();
+    if (finalDescription !== undefined) flow.flowDescription = finalDescription || '';
+    if (steps !== undefined) { // Only update steps if provided in the request
       flow.steps = transformedSteps;
-      flow.startStepId = transformedSteps[0].stepId;
+      // Update startStepId if steps were provided and transformed
+      if (transformedSteps.length > 0) {
+        flow.startStepId = transformedSteps[0].stepId;
+      } else {
+        flow.startStepId = 'step_1'; // Default if steps become empty
+      }
     }
-    if (transformedTriggers.length > 0) flow.triggers = transformedTriggers;
+    if (triggers !== undefined || trigger !== undefined) { // Only update triggers if provided
+      flow.triggers = transformedTriggers;
+    }
     if (isActive !== undefined) flow.isActive = isActive;
     if (version !== undefined) flow.version = version;
     
@@ -834,7 +899,16 @@ router.post('/:id/duplicate', authenticate, requireSuperAdmin, async (req: Reque
  */
 router.post('/:id/activate', authenticate, requireSuperAdmin, async (req: Request, res: Response) => {
   try {
-    const flow = await ChatbotFlow.findById(req.params.id);
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid chatbot flow ID format'
+      });
+    }
+
+    const flow = await ChatbotFlow.findById(id);
     
     if (!flow) {
       return res.status(404).json({

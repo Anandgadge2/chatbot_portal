@@ -22,6 +22,7 @@ export default memo(function DelayNode({ data, selected, id }: NodeProps) {
       icon={<Clock className="w-4 h-4" />}
       color="yellow"
       preview={preview}
+      nodeId={id}
       onDelete={() => {
         window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));
       }}

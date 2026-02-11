@@ -3,11 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { apiClient } from '@/lib/api/client';
+import { chatbotFlowApi } from '@/lib/api/chatbotFlow';
 import toast from 'react-hot-toast';
-import { ArrowLeft } from 'lucide-react';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { Workflow } from 'lucide-react';
 
 export default function EditFlowPage() {
   const params = useParams();
@@ -19,34 +17,34 @@ export default function EditFlowPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.role !== 'SUPER_ADMIN') {
+    if (!user) return;
+    
+    if (user.role !== 'SUPER_ADMIN') {
       router.push('/superadmin/dashboard');
       return;
     }
     
-    // Load flow and redirect to create page with flow data
     loadFlowAndRedirect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when ids/role change
-  }, [user, companyId, flowId, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, companyId, flowId]);
 
   const loadFlowAndRedirect = async () => {
     try {
-      const flowRes = await apiClient.get(`/chatbot-flows/${flowId}`);
-      if (flowRes.success && flowRes.data) {
-        // Store flow data in sessionStorage to avoid URL size limits
-        const flowData = flowRes.data;
+      const response = await chatbotFlowApi.getFlowById(flowId);
+      if (response.success && response.data) {
+        // Store flow data in sessionStorage for the creator/editor
         const storageKey = `flow_edit_${flowId}`;
-        sessionStorage.setItem(storageKey, JSON.stringify(flowData));
+        sessionStorage.setItem(storageKey, JSON.stringify(response.data));
         
-        // Redirect to create page with only flowId in query params
+        // Redirect to main builder with the edit flag
         router.push(`/superadmin/company/${companyId}/chatbot-flows/create?edit=${flowId}`);
       } else {
-        toast.error('Flow not found');
+        toast.error('Flow not found on server');
         router.push(`/superadmin/company/${companyId}/chatbot-flows`);
       }
     } catch (error: any) {
       console.error('Failed to load flow:', error);
-      toast.error('Failed to load flow for editing');
+      toast.error('Failed to load flow data from server');
       router.push(`/superadmin/company/${companyId}/chatbot-flows`);
     } finally {
       setLoading(false);
@@ -54,10 +52,10 @@ export default function EditFlowPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="text-center">
-        <LoadingSpinner />
-        <p className="mt-4 text-gray-600">Loading flow editor...</p>
+        <Workflow className="w-12 h-12 text-purple-600 mx-auto mb-4 animate-spin" />
+        <p className="text-gray-600 font-medium">Loading flow editor...</p>
       </div>
     </div>
   );

@@ -18,14 +18,15 @@ router.use(authenticate);
 // @access  Private
 router.get('/', requirePermission(Permission.READ_GRIEVANCE), async (req: Request, res: Response) => {
   try {
-    const { page = 1, limit = 20, status, departmentId, assignedTo, priority } = req.query;
+    const { page = 1, limit = 20, status, companyId, departmentId, assignedTo, priority } = req.query;
     const currentUser = req.user!;
 
     const query: any = {};
 
     // Scope based on user role
     if (currentUser.role === UserRole.SUPER_ADMIN) {
-      // SuperAdmin can see all grievances
+      // SuperAdmin can see all grievances, but can filter by companyId if provided
+      if (companyId) query.companyId = companyId;
     } else if (currentUser.role === UserRole.COMPANY_ADMIN) {
       // CompanyAdmin can see all grievances in their company
       query.companyId = currentUser.companyId;

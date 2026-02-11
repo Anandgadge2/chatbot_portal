@@ -8,9 +8,10 @@ import { UserInputNodeData } from '@/types/flowTypes';
 
 export default memo(function UserInputNode({ data, selected, id }: NodeProps) {
   const nodeData = data as UserInputNodeData;
+  const messageText = nodeData.messageText || '';
   const inputType = nodeData.inputType || 'text';
   const saveToField = nodeData.saveToField || '';
-  const preview = `Collect ${inputType} → ${saveToField}`;
+  const preview = messageText ? (messageText.length > 50 ? messageText.substring(0, 50) + '...' : messageText) : `Collect ${inputType} → ${saveToField}`;
 
   return (
     <BaseNodeWrapper
@@ -19,6 +20,7 @@ export default memo(function UserInputNode({ data, selected, id }: NodeProps) {
       icon={<Type className="w-4 h-4" />}
       color="green"
       preview={preview}
+      nodeId={id}
       onDelete={() => {
         window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));
       }}
@@ -29,6 +31,21 @@ export default memo(function UserInputNode({ data, selected, id }: NodeProps) {
         window.dispatchEvent(new CustomEvent('node:copy', { detail: { nodeId: id } }));
       }}
     >
+      <NodeField label="Question/Prompt">
+        <textarea
+          value={messageText}
+          onChange={(e) => {
+            window.dispatchEvent(
+              new CustomEvent('node:update', {
+                detail: { nodeId: id, data: { messageText: e.target.value } },
+              })
+            );
+          }}
+          className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+          rows={3}
+          placeholder="Ask the user something..."
+        />
+      </NodeField>
       <NodeField label="Input Type">
         <select
           value={inputType}

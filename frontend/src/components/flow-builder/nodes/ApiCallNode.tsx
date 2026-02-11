@@ -20,6 +20,7 @@ export default memo(function ApiCallNode({ data, selected, id }: NodeProps) {
       icon={<Globe className="w-4 h-4" />}
       color="cyan"
       preview={preview}
+      nodeId={id}
       onDelete={() => {
         window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));
       }}

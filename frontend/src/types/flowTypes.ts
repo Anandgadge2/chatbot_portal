@@ -110,6 +110,7 @@ export interface AssignDepartmentNodeData extends BaseNodeData {
 }
 
 export interface UserInputNodeData extends BaseNodeData {
+  messageText: string;
   inputType: 'text' | 'number' | 'email' | 'phone' | 'date' | 'image' | 'document' | 'location';
   saveToField: string;
   validation?: {
@@ -318,10 +319,13 @@ export interface BackendFlow {
   flowId?: string;
   companyId: string;
   flowName: string;
+  name?: string; // For backend validation compatibility
   flowDescription?: string;
+  description?: string; // For backend validation compatibility
   flowType: 'grievance' | 'appointment' | 'tracking' | 'custom';
   isActive: boolean;
   version: number;
+  isPreTransformed?: boolean;
   startStepId: string;
   steps: BackendFlowStep[];
   triggers: Array<{

@@ -81,6 +81,14 @@ export class DynamicFlowEngine {
 
     try {
       switch (step.stepType) {
+        case 'start':
+          // Start node should not send any message, just advance to next step
+          console.log(`⏭️ Start node detected, skipping to next step`);
+          this.session.data.currentStepId = step.stepId;
+          await updateSession(this.session);
+          await this.runNextStepIfDifferent(step.nextStepId, step.stepId);
+          break;
+        
         case 'message':
           await this.executeMessageStep(step);
           break;

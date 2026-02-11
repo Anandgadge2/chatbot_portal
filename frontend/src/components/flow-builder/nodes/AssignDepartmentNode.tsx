@@ -18,6 +18,7 @@ export default memo(function AssignDepartmentNode({ data, selected, id }: NodePr
       icon={<Users className="w-4 h-4" />}
       color="orange"
       preview={preview}
+      nodeId={id}
       onDelete={() => {
         window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));
       }}

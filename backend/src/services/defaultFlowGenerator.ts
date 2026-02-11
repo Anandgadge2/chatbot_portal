@@ -18,8 +18,15 @@ export async function generateDefaultFlows(companyId: string | mongoose.Types.Ob
       throw new Error(`Company not found: ${companyId}`);
     }
 
-    console.log(`🔄 Generating default flows for company: ${company.name} (${company.companyId})`);
+    console.log(`🔄 Default flow generation is disabled for company: ${company.name} (${company.companyId})`);
+    console.log(`ℹ️  Companies can now create their own custom flows from scratch.`);
 
+    // Default flow generation is disabled
+    // Companies should create their own flows using the flow builder
+    return;
+
+    /* DISABLED: Default flow generation
+    
     // Check if default flows already exist
     const existingFlows = await ChatbotFlow.find({ 
       companyId: companyObjectId,
@@ -51,14 +58,14 @@ export async function generateDefaultFlows(companyId: string | mongoose.Types.Ob
             stepId: 'grievance_start',
             stepType: 'message',
             stepName: 'Grievance Welcome',
-            messageText: '📝 *Register a Grievance*\n\nYou can file a formal complaint regarding any department. To begin, please provide the details as requested.',
+            messageText: '📝 *Register a Grievance*\\n\\nYou can file a formal complaint regarding any department. To begin, please provide the details as requested.',
             nextStepId: 'grievance_name'
           },
           {
             stepId: 'grievance_name',
             stepType: 'input',
             stepName: 'Collect Name',
-            messageText: '👤 *Citizen Identification*\n\nPlease enter your Full Name as per official documents:',
+            messageText: '👤 *Citizen Identification*\\n\\nPlease enter your Full Name as per official documents:',
             inputConfig: {
               inputType: 'text',
               validation: {
@@ -74,14 +81,14 @@ export async function generateDefaultFlows(companyId: string | mongoose.Types.Ob
             stepId: 'grievance_category',
             stepType: 'message',
             stepName: 'Department Selection',
-            messageText: '🏢 *Department Selection*\n\nPlease select the relevant department:',
+            messageText: '🏢 *Department Selection*\\n\\nPlease select the relevant department:',
             nextStepId: 'grievance_description'
           },
           {
             stepId: 'grievance_description',
             stepType: 'input',
             stepName: 'Collect Description',
-            messageText: '✍️ *Grievance Details*\n\nPlease describe your issue in detail. Tip: Include date, location, and specific information for faster resolution.',
+            messageText: '✍️ *Grievance Details*\\n\\nPlease describe your issue in detail. Tip: Include date, location, and specific information for faster resolution.',
             inputConfig: {
               inputType: 'text',
               validation: {
@@ -97,14 +104,14 @@ export async function generateDefaultFlows(companyId: string | mongoose.Types.Ob
             stepId: 'grievance_photo',
             stepType: 'message',
             stepName: 'Photo Request',
-            messageText: '📎 *Supporting Evidence*\n\nUpload a photo or document to support your grievance (Optional).',
+            messageText: '📎 *Supporting Evidence*\\n\\nUpload a photo or document to support your grievance (Optional).',
             nextStepId: 'grievance_confirm'
           },
           {
             stepId: 'grievance_confirm',
             stepType: 'buttons',
             stepName: 'Confirmation',
-            messageText: '📋 *Confirm Submission*\n\n👤 Name: {citizenName}\n🏢 Department: {category}\n📝 Issue: {description}\n\nIs the above information correct?',
+            messageText: '📋 *Confirm Submission*\\n\\n👤 Name: {citizenName}\\n🏢 Department: {category}\\n📝 Issue: {description}\\n\\nIs the above information correct?',
             buttons: [
               { id: 'confirm_yes', title: '✅ Submit Grievance', nextStepId: 'grievance_success' },
               { id: 'confirm_no', title: '❌ Cancel', nextStepId: 'grievance_cancelled' }
@@ -118,13 +125,13 @@ export async function generateDefaultFlows(companyId: string | mongoose.Types.Ob
             stepId: 'grievance_success',
             stepType: 'message',
             stepName: 'Success Message',
-            messageText: '✅ *Grievance Registered Successfully*\n\n📄 Reference Number: {grievanceId}\n\nYour grievance has been forwarded to the concerned department. You will be notified on status updates.\n\nThank you for contacting us.'
+            messageText: '✅ *Grievance Registered Successfully*\\n\\n📄 Reference Number: {grievanceId}\\n\\nYour grievance has been forwarded to the concerned department. You will be notified on status updates.\\n\\nThank you for contacting us.'
           },
           {
             stepId: 'grievance_cancelled',
             stepType: 'message',
             stepName: 'Cancelled',
-            messageText: '🚫 *Cancelled*\n\nGrievance registration has been cancelled.'
+            messageText: '🚫 *Cancelled*\\n\\nGrievance registration has been cancelled.'
           }
         ],
         triggers: [
@@ -163,14 +170,14 @@ export async function generateDefaultFlows(companyId: string | mongoose.Types.Ob
             stepId: 'appointment_start',
             stepType: 'message',
             stepName: 'Appointment Welcome',
-            messageText: '📅 *Book an Official Appointment*\n\nSchedule a meeting with the Chief Executive Officer (CEO). Please provide the required details to proceed with your appointment request.',
+            messageText: '📅 *Book an Official Appointment*\\n\\nSchedule a meeting with the Chief Executive Officer (CEO). Please provide the required details to proceed with your appointment request.',
             nextStepId: 'appointment_name'
           },
           {
             stepId: 'appointment_name',
             stepType: 'input',
             stepName: 'Collect Name',
-            messageText: '👤 *New Appointment Request*\n\nPlease enter your Full Name (as per official records):',
+            messageText: '👤 *New Appointment Request*\\n\\nPlease enter your Full Name (as per official records):',
             inputConfig: {
               inputType: 'text',
               validation: {
@@ -185,7 +192,7 @@ export async function generateDefaultFlows(companyId: string | mongoose.Types.Ob
             stepId: 'appointment_purpose',
             stepType: 'input',
             stepName: 'Collect Purpose',
-            messageText: '🎯 *Purpose of Meeting*\n\nPlease briefly describe the purpose of your meeting with the CEO:',
+            messageText: '🎯 *Purpose of Meeting*\\n\\nPlease briefly describe the purpose of your meeting with the CEO:',
             inputConfig: {
               inputType: 'text',
               validation: {
@@ -200,7 +207,7 @@ export async function generateDefaultFlows(companyId: string | mongoose.Types.Ob
             stepId: 'appointment_date',
             stepType: 'api_call',
             stepName: 'Select Date',
-            messageText: '📅 *Select Preferred Date*\n\nPlease choose a convenient date for your appointment:',
+            messageText: '📅 *Select Preferred Date*\\n\\nPlease choose a convenient date for your appointment:',
             apiConfig: {
               method: 'GET',
               endpoint: `/api/availability/chatbot/${companyObjectId}`,
@@ -212,14 +219,14 @@ export async function generateDefaultFlows(companyId: string | mongoose.Types.Ob
             stepId: 'appointment_time',
             stepType: 'message',
             stepName: 'Select Time',
-            messageText: '⏰ *Select Time Slot*\n\nPlease choose a preferred time:',
+            messageText: '⏰ *Select Time Slot*\\n\\nPlease choose a preferred time:',
             nextStepId: 'appointment_verify'
           },
           {
             stepId: 'appointment_verify',
             stepType: 'buttons',
             stepName: 'Verify Appointment',
-            messageText: '📋 *Verify Appointment Details*\n\n👤 Name: {citizenName}\n👔 Meeting With: CEO\n🎯 Purpose: {purpose}\n📅 Date: {appointmentDate}\n⏰ Time: {appointmentTime}\n\nIs the above information correct?',
+            messageText: '📋 *Verify Appointment Details*\\n\\n👤 Name: {citizenName}\\n👔 Meeting With: CEO\\n🎯 Purpose: {purpose}\\n📅 Date: {appointmentDate}\\n⏰ Time: {appointmentTime}\\n\\nIs the above information correct?',
             buttons: [
               { id: 'confirm_yes', title: '✅ Confirm Booking', nextStepId: 'appointment_submitted' },
               { id: 'confirm_no', title: '❌ Cancel', nextStepId: 'appointment_cancelled' }
@@ -233,13 +240,13 @@ export async function generateDefaultFlows(companyId: string | mongoose.Types.Ob
             stepId: 'appointment_submitted',
             stepType: 'message',
             stepName: 'Success Message',
-            messageText: '✅ *Appointment Request Submitted*\n\nYour appointment request has been received.\n\n📄 Reference Number: {appointmentId}\n📅 Requested Date: {appointmentDate}\n⏰ Requested Time: {appointmentTime}\n⏳ Status: Pending Approval\n\nYou will be notified once the CEO approves or rejects the request.'
+            messageText: '✅ *Appointment Request Submitted*\\n\\nYour appointment request has been received.\\n\\n📄 Reference Number: {appointmentId}\\n📅 Requested Date: {appointmentDate}\\n⏰ Requested Time: {appointmentTime}\\n⏳ Status: Pending Approval\\n\\nYou will be notified once the CEO approves or rejects the request.'
           },
           {
             stepId: 'appointment_cancelled',
             stepType: 'message',
             stepName: 'Cancelled',
-            messageText: '🚫 *Cancelled*\n\nAppointment booking has been cancelled.'
+            messageText: '🚫 *Cancelled*\\n\\nAppointment booking has been cancelled.'
           }
         ],
         triggers: [
@@ -277,7 +284,7 @@ export async function generateDefaultFlows(companyId: string | mongoose.Types.Ob
           stepId: 'track_start',
           stepType: 'input',
           stepName: 'Collect Reference Number',
-          messageText: '🔍 *Track Status*\n\nPlease enter your Reference Number:',
+          messageText: '🔍 *Track Status*\\n\\nPlease enter your Reference Number:',
           inputConfig: {
             inputType: 'text',
             validation: {
@@ -292,7 +299,7 @@ export async function generateDefaultFlows(companyId: string | mongoose.Types.Ob
           stepId: 'track_result',
           stepType: 'message',
           stepName: 'Show Status',
-          messageText: '📊 *Status Information*\n\nReference: {referenceNumber}\nStatus: {status}\nLast Updated: {lastUpdated}\n\nThank you for using our tracking service.'
+          messageText: '📊 *Status Information*\\n\\nReference: {referenceNumber}\\nStatus: {status}\\nLast Updated: {lastUpdated}\\n\\nThank you for using our tracking service.'
         }
       ],
       triggers: [
@@ -323,6 +330,8 @@ export async function generateDefaultFlows(companyId: string | mongoose.Types.Ob
     });
 
     return;
+    
+    END OF DISABLED CODE */
   } catch (error: any) {
     console.error('❌ Error generating default flows:', error);
     throw error;

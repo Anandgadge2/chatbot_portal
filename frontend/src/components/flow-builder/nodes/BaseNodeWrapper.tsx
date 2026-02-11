@@ -12,6 +12,7 @@ interface BaseNodeWrapperProps {
   onCopy?: () => void;
   children?: React.ReactNode;
   preview?: string;
+  nodeId?: string; // Add nodeId for updating label
 }
 
 export function BaseNodeWrapper({
@@ -24,8 +25,32 @@ export function BaseNodeWrapper({
   onCopy,
   children,
   preview,
+  nodeId,
 }: BaseNodeWrapperProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [labelValue, setLabelValue] = useState(data.label || 'Node');
+
+  // Update labelValue when data.label changes
+  React.useEffect(() => {
+    setLabelValue(data.label || 'Node');
+  }, [data.label]);
+
+  const handleLabelSave = () => {
+    if (nodeId && labelValue.trim()) {
+      window.dispatchEvent(
+        new CustomEvent('node:update', {
+          detail: { nodeId, data: { label: labelValue.trim() } },
+        })
+      );
+    }
+    setIsEditingLabel(false);
+  };
+
+  const handleLabelCancel = () => {
+    setLabelValue(data.label || 'Node');
+    setIsEditingLabel(false);
+  };
 
   const borderColor = selected ? `border-${color}-500` : `border-${color}-300`;
   const bgColor = `bg-${color}-50`;
@@ -44,11 +69,41 @@ export function BaseNodeWrapper({
 
       {/* Header */}
       <div className={`px-3 py-2 ${bgColor} rounded-t-lg border-b border-${color}-200 flex items-center justify-between`}>
-        <div className="flex items-center gap-2 flex-1">
-          <div className={`p-1.5 ${iconBgColor} rounded ${iconColor}`}>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className={`p-1.5 ${iconBgColor} rounded ${iconColor} flex-shrink-0`}>
             {icon}
           </div>
-          <div className="font-semibold text-sm text-gray-900">{data.label}</div>
+          {isEditingLabel ? (
+            <input
+              type="text"
+              value={labelValue}
+              onChange={(e) => setLabelValue(e.target.value)}
+              onBlur={handleLabelSave}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleLabelSave();
+                } else if (e.key === 'Escape') {
+                  e.preventDefault();
+                  handleLabelCancel();
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+              autoFocus
+              className="flex-1 px-2 py-0.5 text-sm font-semibold text-gray-900 bg-white border border-teal-400 rounded focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          ) : (
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsEditingLabel(true);
+              }}
+              className="flex-1 font-semibold text-sm text-gray-900 cursor-pointer hover:bg-white/50 px-2 py-0.5 rounded transition-colors truncate"
+              title="Click to edit label"
+            >
+              {data.label}
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}

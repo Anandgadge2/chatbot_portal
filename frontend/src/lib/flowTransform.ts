@@ -36,10 +36,13 @@ export function transformToBackendFormat(flow: Flow): BackendFlow {
   return {
     companyId: metadata.companyId,
     flowName: metadata.name,
+    name: metadata.name, // Support both formats for backend validation
     flowDescription: metadata.description,
+    description: metadata.description, // Support both formats
     flowType: inferFlowType(metadata.name),
     isActive: metadata.isActive,
     version: metadata.version,
+    isPreTransformed: true, // Signal backend to skip transformation
     startStepId,
     steps,
     triggers,

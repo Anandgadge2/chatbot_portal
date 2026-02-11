@@ -18,6 +18,7 @@ import toast from 'react-hot-toast';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { Building, Users, Shield, Settings, FileText, BarChart2, RefreshCw, Search, Download } from 'lucide-react';
+import { Pagination } from '@/components/ui/Pagination';
 
 const CHART_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
@@ -57,6 +58,17 @@ export default function SuperAdminDashboard() {
   const [showDepartmentDialog, setShowDepartmentDialog] = useState(false);
   const [showUserDialog, setShowUserDialog] = useState(false);
   const [userRoleFilter, setUserRoleFilter] = useState<string>('');
+  
+  // Pagination State
+  const [companyPage, setCompanyPage] = useState(1);
+  const [companyPagination, setCompanyPagination] = useState({ total: 0, pages: 1, limit: 10 });
+  
+  const [departmentPage, setDepartmentPage] = useState(1);
+  const [departmentPagination, setDepartmentPagination] = useState({ total: 0, pages: 1, limit: 10 });
+  
+  const [userPage, setUserPage] = useState(1);
+  const [userPagination, setUserPagination] = useState({ total: 0, pages: 1, limit: 10 });
+
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -83,12 +95,17 @@ export default function SuperAdminDashboard() {
     }
   }, [user, loading, router]);
 
-  const fetchCompanies = async () => {
+  const fetchCompanies = async (page = companyPage) => {
     setCompaniesLoading(true);
     try {
-      const response = await companyAPI.getAll();
+      const response = await companyAPI.getAll({ page, limit: companyPagination.limit });
       if (response.success) {
         setCompanies(response.data.companies);
+        setCompanyPagination(prev => ({
+          ...prev,
+          total: response.data.pagination.total,
+          pages: response.data.pagination.pages
+        }));
       }
     } catch (error: any) {
       toast.error('Failed to fetch companies');
@@ -97,22 +114,32 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  const fetchDepartments = async () => {
+  const fetchDepartments = async (page = departmentPage) => {
     try {
-      const response = await departmentAPI.getAll();
+      const response = await departmentAPI.getAll({ page, limit: departmentPagination.limit });
       if (response.success) {
         setDepartments(response.data.departments);
+        setDepartmentPagination(prev => ({
+          ...prev,
+          total: response.data.pagination.total,
+          pages: response.data.pagination.pages
+        }));
       }
     } catch (error: any) {
       toast.error('Failed to fetch departments');
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = userPage) => {
     try {
-      const response = await userAPI.getAll();
+      const response = await userAPI.getAll({ page, limit: userPagination.limit, role: userRoleFilter });
       if (response.success) {
         setUsers(response.data.users);
+        setUserPagination(prev => ({
+          ...prev,
+          total: response.data.pagination.total,
+          pages: response.data.pagination.pages
+        }));
       }
     } catch (error: any) {
       toast.error('Failed to fetch users');
@@ -125,19 +152,19 @@ export default function SuperAdminDashboard() {
     let usersList: User[] = [];
     let departmentsList: Department[] = [];
     try {
-      const companiesResponse = await companyAPI.getAll();
+      const companiesResponse = await companyAPI.getAll({ limit: 1000 });
       if (companiesResponse.success) companies = companiesResponse.data.companies;
     } catch (e) {
       console.warn('Stats: companies fetch failed', e);
     }
     try {
-      const usersResponse = await userAPI.getAll();
+      const usersResponse = await userAPI.getAll({ limit: 1000 });
       if (usersResponse.success) usersList = usersResponse.data.users;
     } catch (e) {
       console.warn('Stats: users fetch failed', e);
     }
     try {
-      const departmentsResponse = await departmentAPI.getAll();
+      const departmentsResponse = await departmentAPI.getAll({ limit: 1000 });
       if (departmentsResponse.success) departmentsList = departmentsResponse.data.departments;
     } catch (e) {
       console.warn('Stats: departments fetch failed', e);
@@ -258,9 +285,24 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => {
     if (mounted && user) {
-      fetchCompanies();
-      fetchDepartments();
-      fetchUsers();
+      fetchCompanies(companyPage);
+    }
+  }, [mounted, user, companyPage]);
+
+  useEffect(() => {
+    if (mounted && user) {
+      fetchDepartments(departmentPage);
+    }
+  }, [mounted, user, departmentPage]);
+
+  useEffect(() => {
+    if (mounted && user) {
+      fetchUsers(userPage);
+    }
+  }, [mounted, user, userPage, userRoleFilter]);
+
+  useEffect(() => {
+    if (mounted && user) {
       fetchStats();
       fetchAnalytics();
     }
@@ -644,6 +686,15 @@ export default function SuperAdminDashboard() {
                         </div>
                       </div>
                     ))}
+                    
+                    <Pagination
+                      currentPage={companyPage}
+                      totalPages={companyPagination.pages}
+                      totalItems={companyPagination.total}
+                      itemsPerPage={companyPagination.limit}
+                      onPageChange={setCompanyPage}
+                      className="mt-6 shadow-none border-t border-slate-100 rounded-none bg-slate-50/30"
+                    />
                   </div>
                 )}
               </CardContent>
@@ -695,7 +746,7 @@ export default function SuperAdminDashboard() {
                         <tr key={department._id} className="hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-pink-50/50 transition-all duration-200">
                           <td className="px-3 py-4 text-center">
                             <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-700 text-xs font-bold">
-                              {index + 1}
+                              {(departmentPage - 1) * departmentPagination.limit + index + 1}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -744,6 +795,15 @@ export default function SuperAdminDashboard() {
                     </tbody>
                   </table>
                 </div>
+
+                <Pagination
+                  currentPage={departmentPage}
+                  totalPages={departmentPagination.pages}
+                  totalItems={departmentPagination.total}
+                  itemsPerPage={departmentPagination.limit}
+                  onPageChange={setDepartmentPage}
+                  className="mt-6 shadow-none border-t border-slate-100 rounded-none bg-slate-50/30"
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -817,7 +877,7 @@ export default function SuperAdminDashboard() {
                       <tr key={u._id} className="hover:bg-gradient-to-r hover:from-emerald-50/50 hover:to-cyan-50/50 transition-all duration-200">
                         <td className="px-3 py-4 text-center">
                           <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">
-                            {idx + 1}
+                            {(userPage - 1) * userPagination.limit + idx + 1}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -875,6 +935,15 @@ export default function SuperAdminDashboard() {
                   );
                   })()}
                 </div>
+
+                <Pagination
+                  currentPage={userPage}
+                  totalPages={userPagination.pages}
+                  totalItems={userPagination.total}
+                  itemsPerPage={userPagination.limit}
+                  onPageChange={setUserPage}
+                  className="mt-6 shadow-none border-t border-slate-100 rounded-none bg-slate-50/30"
+                />
               </CardContent>
             </Card>
           </TabsContent>

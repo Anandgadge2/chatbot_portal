@@ -67,8 +67,8 @@ const messageTypeNodes: NodePaletteItem[] = [
   },
   {
     type: "buttonMessage",
-    label: "Catalogue Message",
-    description: "Product catalogue",
+    label: "Button Messages",
+    description: "Send buttons with options",
     icon: <ShoppingCart className="w-4 h-4" />,
     category: "message",
     defaultData: {},
@@ -239,6 +239,7 @@ function DraggableNode({ item }: { item: NodePaletteItem }) {
 
 export default function NodeSidebar() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     messageTypes: true,
     actions: true,
@@ -260,25 +261,43 @@ export default function NodeSidebar() {
   );
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
+    <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 flex flex-col h-full transition-all duration-300`}>
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
-        <h2 className="text-base font-semibold text-gray-900 mb-3">
-          Message types
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          {!isCollapsed && (
+            <h2 className="text-base font-semibold text-gray-900">
+              Message types
+            </h2>
+          )}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-1.5 hover:bg-gray-100 rounded transition-colors ml-auto"
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <ChevronRight
+              className={`w-4 h-4 text-gray-600 transition-transform ${
+                isCollapsed ? '' : 'rotate-180'
+              }`}
+            />
+          </button>
+        </div>
 
         {/* Search */}
-        <Input
-          type="text"
-          placeholder="Search..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="text-sm"
-        />
+        {!isCollapsed && (
+          <Input
+            type="text"
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="text-sm"
+          />
+        )}
       </div>
 
-      {/* Node List */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Node List - Expanded */}
+      {!isCollapsed && (
+        <div className="flex-1 overflow-y-auto">
         {/* Message Types Section */}
         <div className="border-b border-gray-200">
           <button
@@ -337,6 +356,29 @@ export default function NodeSidebar() {
           )}
         </div>
       </div>
+      )}
+      
+      {/* Node List - Collapsed (Icon only) */}
+      {isCollapsed && (
+        <div className="flex-1 overflow-y-auto p-2 space-y-2">
+          {[...messageTypeNodes.slice(0, 4), ...actionNodes.slice(0, 4)].map((item, idx) => (
+            <button
+              key={idx}
+              onClick={() => {
+                window.dispatchEvent(
+                  new CustomEvent('node:add-from-sidebar', {
+                    detail: { nodeType: item.type },
+                  })
+                );
+              }}
+              className="w-full p-2.5 bg-teal-50 hover:bg-teal-100 rounded transition-colors flex items-center justify-center group"
+              title={item.label}
+            >
+              <div className="text-teal-600 group-hover:scale-110 transition-transform">{item.icon}</div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -22,6 +22,7 @@ export default memo(function ConditionNode({ data, selected, id }: NodeProps) {
         icon={<GitBranch className="w-4 h-4" />}
         color="amber"
         preview={preview}
+        nodeId={id}
         onDelete={() => {
           window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));
         }}

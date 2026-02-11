@@ -27,6 +27,10 @@ interface FlowToolbarProps {
   onValidate: () => void;
   onNodesChange: (nodes: FlowNode[]) => void;
   onEdgesChange: (edges: FlowEdge[]) => void;
+  showSave?: boolean;
+  onSave?: (nodes: FlowNode[], edges: FlowEdge[], name: string) => void;
+  name?: string;
+  showName?: boolean;
 }
 
 // History management
@@ -39,6 +43,10 @@ export default function FlowToolbar({
   onValidate,
   onNodesChange,
   onEdgesChange,
+  showSave = true,
+  onSave,
+  name,
+  showName = true,
 }: FlowToolbarProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,6 +54,11 @@ export default function FlowToolbar({
   const [flowName, setFlowName] = useState('Untitled Flow');
   const [showSettings, setShowSettings] = useState(false);
   const [showTestDialog, setShowTestDialog] = useState(false);
+  
+  // Sync name from props
+  useEffect(() => {
+    if (name) setFlowName(name);
+  }, [name]);
   
   // Settings state
   const [flowType, setFlowType] = useState('grievance');
@@ -172,6 +185,12 @@ export default function FlowToolbar({
   };
 
   const handleSave = async () => {
+    // If a custom onSave handler is provided, use it
+    if (onSave) {
+      onSave(nodes, edges, flowName);
+      return;
+    }
+
     // Save to history before saving
     saveToHistory();
 
@@ -265,13 +284,42 @@ export default function FlowToolbar({
       const reader = new FileReader();
       reader.onload = (event) => {
         try {
-          const flow: Flow = JSON.parse(event.target?.result as string);
-          saveToHistory(); // Save current state before importing
-          onNodesChange(flow.nodes);
-          onEdgesChange(flow.edges);
-          setFlowName(flow.metadata.name);
+          const rawData = JSON.parse(event.target?.result as string);
+          
+          // Basic normalization for different formats
+          const nodes = (rawData.nodes || []).map((node: any) => {
+            const data = { ...node.data };
+            
+            // Map legacy/external fields
+            if (node.type === 'userInput' && node.data?.promptMessage) {
+              data.messageText = node.data.promptMessage;
+            }
+            if (node.type === 'end' && node.data?.message) {
+              data.endMessage = node.data.message;
+            }
+            if (node.type === 'textMessage' && node.data?.text) {
+              data.messageText = node.data.text;
+            }
+            if (node.type === 'buttonMessage' && node.data?.text) {
+              data.messageText = node.data.text;
+            }
+
+            return { ...node, data };
+          });
+
+          const edges = rawData.edges || [];
+          
+          // Handle missing metadata
+          const name = rawData.metadata?.name || rawData.name || rawData.flowName || 'Imported Flow';
+          
+          saveToHistory();
+          onNodesChange(nodes);
+          onEdgesChange(edges);
+          setFlowName(name);
+          
           toast.success('Flow imported successfully');
         } catch (error) {
+          console.error('Import error:', error);
           toast.error('Invalid flow file');
         }
       };
@@ -286,13 +334,15 @@ export default function FlowToolbar({
         <div className="flex items-center justify-between">
           {/* Left Section - Flow Name */}
           <div className="flex items-center gap-3">
-            <input
-              type="text"
-              value={flowName}
-              onChange={(e) => setFlowName(e.target.value)}
-              className="text-lg font-semibold bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-purple-500 rounded px-2 py-1"
-              placeholder="Flow Name"
-            />
+            {showName && (
+              <input
+                type="text"
+                value={flowName}
+                onChange={(e) => setFlowName(e.target.value)}
+                className="text-lg font-semibold bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-purple-500 rounded px-2 py-1"
+                placeholder="Flow Name"
+              />
+            )}
             <span className="text-sm text-gray-500">
               {nodes.length} node{nodes.length !== 1 ? 's' : ''}, {edges.length} connection
               {edges.length !== 1 ? 's' : ''}
@@ -399,15 +449,17 @@ export default function FlowToolbar({
             </Button>
 
             {/* Save */}
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={isSaving || nodes.length === 0}
-              className="gap-2 bg-purple-600 hover:bg-purple-700"
-            >
-              <Save className="w-4 h-4" />
-              {isSaving ? 'Saving...' : 'Save'}
-            </Button>
+            {showSave && (
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={isSaving || nodes.length === 0}
+                className="gap-2 bg-purple-600 hover:bg-purple-700"
+              >
+                <Save className="w-4 h-4" />
+                {isSaving ? 'Saving...' : 'Save'}
+              </Button>
+            )}
           </div>
         </div>
 

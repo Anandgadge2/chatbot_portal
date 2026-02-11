@@ -29,17 +29,21 @@ export default function FlowBuilderPage() {
 
   const loadFlow = async (id: string) => {
     try {
-      // TODO: Load flow from API
-      // const response = await fetch(`/api/flows/${id}`);
-      // const data = await response.json();
-      // setFlowName(data.name);
-      // setInitialNodes(data.nodes);
-      // setInitialEdges(data.edges);
+      // Load flow from localStorage
+      const storedFlows = localStorage.getItem('chatbot_flows');
+      if (storedFlows) {
+        const flows = JSON.parse(storedFlows);
+        const flow = flows.find((f: any) => f._id === id);
+        
+        if (flow) {
+          setFlowName(flow.name || 'Untitled');
+          setInitialNodes(flow.nodes || []);
+          setInitialEdges(flow.edges || []);
+        } else {
+          toast.error('Flow not found');
+        }
+      }
       
-      // Mock data for now
-      setFlowName('Untitled');
-      setInitialNodes([]);
-      setInitialEdges([]);
       setLoaded(true);
     } catch (error) {
       console.error('Failed to load flow:', error);
@@ -57,27 +61,51 @@ export default function FlowBuilderPage() {
       edges,
     };
 
-    // Simulate API call
+    // Save to localStorage
     setTimeout(async () => {
       try {
+        // Get existing flows from localStorage
+        const storedFlows = localStorage.getItem('chatbot_flows');
+        const flows = storedFlows ? JSON.parse(storedFlows) : [];
+
         if (isNewFlow) {
           // Create new flow
-          // const response = await fetch('/api/flows', {
-          //   method: 'POST',
-          //   headers: { 'Content-Type': 'application/json' },
-          //   body: JSON.stringify(flowData),
-          // });
-          // const newFlow = await response.json();
-          // router.push(`/flows/builder/${newFlow._id}`);
+          const newFlow = {
+            _id: `flow_${Date.now()}`,
+            name: flowName,
+            description: '',
+            createdBy: { _id: 'user1', name: 'mukund' },
+            isActive: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            nodes,
+            edges,
+          };
+          
+          flows.push(newFlow);
+          localStorage.setItem('chatbot_flows', JSON.stringify(flows));
+          
           toast.success('Flow created successfully');
+          
+          // Update URL to the new flow ID
+          router.replace(`/flows/builder/${newFlow._id}`);
         } else {
           // Update existing flow
-          // await fetch(`/api/flows/${flowId}`, {
-          //   method: 'PUT',
-          //   headers: { 'Content-Type': 'application/json' },
-          //   body: JSON.stringify(flowData),
-          // });
-          toast.success('Flow saved successfully');
+          const flowIndex = flows.findIndex((f: any) => f._id === flowId);
+          
+          if (flowIndex !== -1) {
+            flows[flowIndex] = {
+              ...flows[flowIndex],
+              name: flowName,
+              updatedAt: new Date().toISOString(),
+              nodes,
+              edges,
+            };
+            localStorage.setItem('chatbot_flows', JSON.stringify(flows));
+            toast.success('Flow saved successfully');
+          } else {
+            toast.error('Flow not found');
+          }
         }
       } catch (error) {
         console.error('Failed to save flow:', error);

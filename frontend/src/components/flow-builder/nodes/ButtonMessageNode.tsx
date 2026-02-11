@@ -129,6 +129,7 @@ export default memo(function ButtonMessageNode({ data, selected, id }: NodeProps
       icon={<MousePointerClick className="w-4 h-4" />}
       color="blue"
       preview={preview}
+      nodeId={id}
       onDelete={() => {
         window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));
       }}

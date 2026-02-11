@@ -18,6 +18,7 @@ export default memo(function StartNode({ data, selected, id }: NodeProps) {
       icon={<Play className="w-4 h-4" />}
       color="green"
       preview={`Trigger: ${trigger}`}
+      nodeId={id}
       onDelete={() => {
         window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));
       }}

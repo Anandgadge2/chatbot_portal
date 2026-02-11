@@ -415,7 +415,7 @@ export default function CompanyDrillDown() {
                 className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-xl transition-all shadow-lg"
               >
                 <Workflow className="w-4 h-4" />
-                Customize Chatbot
+                Custom Flow
               </Button>
               
               <button

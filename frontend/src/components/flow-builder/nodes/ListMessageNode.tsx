@@ -96,6 +96,7 @@ export default memo(function ListMessageNode({ data, selected, id }: NodeProps) 
       icon={<List className="w-4 h-4" />}
       color="indigo"
       preview={preview}
+      nodeId={id}
       onDelete={() => {
         window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));
       }}

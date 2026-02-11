@@ -18,6 +18,7 @@ export default memo(function TextMessageNode({ data, selected, id }: NodeProps) 
       icon={<MessageSquare className="w-4 h-4" />}
       color="purple"
       preview={preview}
+      nodeId={id}
       onDelete={() => {
         // Dispatch custom event for deletion
         window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));

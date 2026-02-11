@@ -67,9 +67,9 @@ export function validateFlow(flow: Flow): ValidationResult {
   // Check for circular dependencies
   const cycles = detectCycles(flow.nodes, flow.edges);
   if (cycles.length > 0) {
-    errors.push({
-      type: 'error',
-      message: `Circular dependency detected: ${cycles.join(' → ')}`,
+    warnings.push({
+      type: 'warning',
+      message: `Loop detected: ${cycles.join(' → ')}. Chatbot flows can contain loops (e.g., returning to a menu), but ensure they aren't infinite.`,
     });
   }
 

@@ -56,6 +56,10 @@ interface FlowCanvasProps {
   initialNodes?: FlowNode[];
   initialEdges?: FlowEdge[];
   onSave?: (nodes: FlowNode[], edges: FlowEdge[]) => void;
+  showToolbarSave?: boolean;
+  onToolbarSave?: (nodes: FlowNode[], edges: FlowEdge[], name: string) => void;
+  flowName?: string;
+  showToolbarName?: boolean;
 }
 
 interface HistoryState {
@@ -63,7 +67,15 @@ interface HistoryState {
   edges: FlowEdge[];
 }
 
-export default function FlowCanvas({ initialNodes = [], initialEdges = [], onSave }: FlowCanvasProps = {}) {
+export default function FlowCanvas({ 
+  initialNodes = [], 
+  initialEdges = [], 
+  onSave,
+  showToolbarSave = true,
+  onToolbarSave,
+  flowName,
+  showToolbarName = true
+}: FlowCanvasProps = {}) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -458,10 +470,14 @@ export default function FlowCanvas({ initialNodes = [], initialEdges = [], onSav
             onValidate={handleValidate}
             onNodesChange={setNodes}
             onEdgesChange={setEdges}
+            showSave={showToolbarSave}
+            onSave={onToolbarSave}
+            name={flowName}
+            showName={showToolbarName}
           />
 
           {/* React Flow Canvas */}
-          <div ref={reactFlowWrapper} className="flex-1">
+          <div ref={reactFlowWrapper} className="flex-1 pb-4 relative" style={{ minHeight: 0 }}>
             <ReactFlow
               nodes={nodes}
               edges={edges}
@@ -475,7 +491,17 @@ export default function FlowCanvas({ initialNodes = [], initialEdges = [], onSav
               fitView
               attributionPosition="bottom-left"
             >
-              <Controls />
+              <Controls 
+                position="bottom-left"
+                showZoom={true}
+                showFitView={true}
+                showInteractive={true}
+                style={{
+                  left: '20px',
+                  bottom: '20px',
+                  zIndex: 10,
+                }}
+              />
               <MiniMap
                 nodeColor={(node) => {
                   switch (node.type) {

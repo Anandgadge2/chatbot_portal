@@ -20,6 +20,7 @@ export default memo(function MediaMessageNode({ data, selected, id }: NodeProps)
       icon={<Image className="w-4 h-4" />}
       color="pink"
       preview={preview}
+      nodeId={id}
       onDelete={() => {
         window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));
       }}

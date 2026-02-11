@@ -17,6 +17,7 @@ export default memo(function EndNode({ data, selected, id }: NodeProps) {
       icon={<StopCircle className="w-4 h-4" />}
       color="red"
       preview={endMessage}
+      nodeId={id}
       onDelete={() => {
         window.dispatchEvent(new CustomEvent('node:delete', { detail: { nodeId: id } }));
       }}
