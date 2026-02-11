@@ -35,6 +35,7 @@ import availabilityRoutes from './routes/availability.routes';
 import chatbotFlowRoutes from './routes/chatbotFlow.routes';
 import whatsappConfigRoutes from './routes/companyWhatsAppConfig.routes';
 import emailConfigRoutes from './routes/companyEmailConfig.routes';
+import leadRoutes from './routes/lead.routes';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler';
@@ -200,6 +201,7 @@ app.use('/api/availability', availabilityRoutes);
 app.use('/api/chatbot-flows', chatbotFlowRoutes);
 app.use('/api/whatsapp-config', whatsappConfigRoutes);
 app.use('/api/email-config', emailConfigRoutes);
+app.use('/api/leads', leadRoutes);
 
 // ================================
 // Error Handling

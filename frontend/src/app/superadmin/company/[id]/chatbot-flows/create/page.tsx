@@ -74,7 +74,7 @@ export default function CreateFlowPage() {
     }
   }, [isEditing, loadFlowData]);
 
-  const handleSave = async (nodes: FlowNode[], edges: FlowEdge[]) => {
+  const handleSave = useCallback(async (nodes: FlowNode[], edges: FlowEdge[]) => {
     if (!flowName.trim()) {
       toast.error('Please enter a flow name');
       return;
@@ -89,8 +89,8 @@ export default function CreateFlowPage() {
           companyId,
           version: 1,
           isActive: false,
-          createdBy: user?._id || '',
-          updatedBy: user?._id || '',
+          createdBy: user?.id || '',
+          updatedBy: user?.id || '',
         },
         nodes,
         edges,
@@ -120,7 +120,7 @@ export default function CreateFlowPage() {
     } finally {
       setSaving(false);
     }
-  };
+  }, [flowName, flowDescription, companyId, isEditing, editFlowId, user, router]);
 
   const handleSaveClick = () => {
     // Trigger save event that FlowCanvas listens to
@@ -136,7 +136,7 @@ export default function CreateFlowPage() {
 
     window.addEventListener('flow:data', handleFlowData);
     return () => window.removeEventListener('flow:data', handleFlowData);
-  }, [flowName, companyId, isEditing, editFlowId, user]);
+  }, [flowName, companyId, isEditing, editFlowId, user, handleSave]);
 
   if (loading) {
     return (

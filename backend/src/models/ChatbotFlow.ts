@@ -9,7 +9,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IFlowStep {
   stepId: string;
-  stepType: 'message' | 'buttons' | 'list' | 'input' | 'media' | 'condition' | 'api_call';
+  stepType: 'start' | 'message' | 'buttons' | 'list' | 'input' | 'media' | 'condition' | 'api_call' | 'delay' | 'assign_department' | 'dynamic_response';
   stepName: string;
   
   // Message configuration
@@ -157,7 +157,7 @@ const FlowStepSchema = new Schema({
   stepId: { type: String, required: true },
   stepType: { 
     type: String, 
-    enum: ['message', 'buttons', 'list', 'input', 'media', 'condition', 'api_call', 'delay', 'assign_department', 'dynamic_response'],
+    enum: ['start', 'message', 'buttons', 'list', 'input', 'media', 'condition', 'api_call', 'delay', 'assign_department', 'dynamic_response'],
     required: true 
   },
   stepName: { type: String, required: true },

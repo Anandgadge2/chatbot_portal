@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FlowNode, FlowEdge, Flow } from '@/types/flowTypes';
 import { transformToBackendFormat } from '@/lib/flowTransform';
 import { validateFlow } from '@/lib/flowValidation';
@@ -84,7 +84,7 @@ export default function FlowToolbar({
     }
   };
 
-  const handleUndo = () => {
+  const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
       historyIndex--;
       const state = history[historyIndex];
@@ -94,9 +94,9 @@ export default function FlowToolbar({
     } else {
       toast.error('Nothing to undo');
     }
-  };
+  }, [onNodesChange, onEdgesChange]);
 
-  const handleRedo = () => {
+  const handleRedo = useCallback(() => {
     if (historyIndex < history.length - 1) {
       historyIndex++;
       const state = history[historyIndex];
@@ -106,7 +106,7 @@ export default function FlowToolbar({
     } else {
       toast.error('Nothing to redo');
     }
-  };
+  }, [onNodesChange, onEdgesChange]);
 
   // Listen for keyboard shortcuts from FlowCanvas
   useEffect(() => {
@@ -120,7 +120,7 @@ export default function FlowToolbar({
       window.removeEventListener('flowbuilder:undo', handleUndoEvent);
       window.removeEventListener('flowbuilder:redo', handleRedoEvent);
     };
-  }, [nodes, edges]);
+  }, [nodes, edges, handleUndo, handleRedo]);
 
   const handleLoad = async () => {
     try {

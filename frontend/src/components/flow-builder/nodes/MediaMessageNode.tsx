@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import { NodeProps } from 'reactflow';
-import { Image } from 'lucide-react';
+import { Image as ImageIcon } from 'lucide-react';
 import { BaseNodeWrapper, NodeField } from './BaseNodeWrapper';
 import { MediaMessageNodeData } from '@/types/flowTypes';
 
@@ -17,7 +17,7 @@ export default memo(function MediaMessageNode({ data, selected, id }: NodeProps)
     <BaseNodeWrapper
       data={nodeData}
       selected={selected}
-      icon={<Image className="w-4 h-4" />}
+      icon={<ImageIcon className="w-4 h-4" />}
       color="pink"
       preview={preview}
       nodeId={id}

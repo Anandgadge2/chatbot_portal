@@ -751,7 +751,8 @@ export class DynamicFlowEngine {
       };
 
       if (body && method !== 'GET') {
-        options.body = JSON.stringify(body);
+        const bodyStr = JSON.stringify(body);
+        options.body = this.replacePlaceholders(bodyStr);
       }
 
       // Replace placeholders in URL (e.g., {companyId})

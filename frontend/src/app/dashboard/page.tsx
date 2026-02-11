@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -112,6 +112,10 @@ interface DashboardStats {
 
 function DashboardContent() {
   const { user, loading, logout } = useAuth();
+  const isCompanyAdmin = user?.role === 'COMPANY_ADMIN';
+  const isDepartmentAdmin = user?.role === 'DEPARTMENT_ADMIN';
+  const isOperator = user?.role === 'OPERATOR';
+  const isAnalyticsViewer = user?.role === 'ANALYTICS_VIEWER';
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
@@ -355,6 +359,179 @@ function DashboardContent() {
   const [prevGrievanceCount, setPrevGrievanceCount] = useState<number | null>(null);
   const [prevAppointmentCount, setPrevAppointmentCount] = useState<number | null>(null);
 
+  const fetchPerformanceData = useCallback(async () => {
+    try {
+      const response = await apiClient.get('/analytics/performance');
+      if (response.success) {
+        setPerformanceData(response.data);
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch performance data:', error);
+    }
+  }, []);
+
+  const fetchHourlyData = useCallback(async () => {
+    try {
+      const response = await apiClient.get('/analytics/hourly?days=7');
+      if (response.success) {
+        setHourlyData(response.data);
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch hourly data:', error);
+    }
+  }, []);
+
+  const fetchCategoryData = useCallback(async () => {
+    try {
+      const response = await apiClient.get('/analytics/category');
+      if (response.success) {
+        setCategoryData(response.data);
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch category data:', error);
+    }
+  }, []);
+
+  const fetchDashboardData = useCallback(async () => {
+    setLoadingStats(true);
+    try {
+      const response = await apiClient.get<{ success: boolean; data: DashboardStats }>('/analytics/dashboard');
+      if (response.success) {
+        setStats(response.data);
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch dashboard stats:', error);
+      toast.error('Failed to load dashboard statistics');
+    } finally {
+      setLoadingStats(false);
+    }
+  }, []);
+
+  const fetchCompany = useCallback(async () => {
+    if (!user || user.role !== 'COMPANY_ADMIN') return;
+    
+    try {
+      const response = await companyAPI.getMyCompany();
+      if (response.success) {
+        setCompany(response.data.company);
+      }
+    } catch (error: any) {
+      // CompanyAdmin might not have company associated
+      console.log('Company details not available:', error.message);
+    }
+  }, [user]);
+
+  const fetchDepartments = useCallback(async (page = departmentPage) => {
+    setLoadingDepartments(true);
+    try {
+      const response = await departmentAPI.getAll({ page, limit: departmentPagination.limit });
+      if (response.success) {
+        let filteredDepartments = response.data.departments;
+        
+        // For department admin, only show their own department
+        if (isDepartmentAdmin && user?.departmentId) {
+          const userDeptId = typeof user.departmentId === 'object' && user.departmentId !== null 
+            ? (user.departmentId as any)._id || (user.departmentId as any).toString()
+            : user.departmentId;
+          
+          filteredDepartments = filteredDepartments.filter((dept: Department) => {
+            const deptId = dept._id?.toString() || dept._id;
+            const userDeptIdStr = userDeptId?.toString() || userDeptId;
+            return deptId === userDeptIdStr;
+          });
+        }
+        
+        setDepartments(filteredDepartments);
+        setDepartmentPagination(prev => ({
+          ...prev,
+          total: response.data.pagination.total,
+          pages: response.data.pagination.pages
+        }));
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch departments:', error);
+      toast.error('Failed to load departments');
+    } finally {
+      setLoadingDepartments(false);
+    }
+  }, [departmentPage, departmentPagination.limit, isDepartmentAdmin, user?.departmentId]);
+
+  const fetchUsers = useCallback(async (page = userPage) => {
+    setLoadingUsers(true);
+    try {
+      const response = await userAPI.getAll({ page, limit: userPagination.limit });
+      if (response.success) {
+        let filteredUsers = response.data.users;
+        
+        // Filter users by department for department admins
+        if (isDepartmentAdmin && user?.departmentId) {
+          const userDeptId = typeof user.departmentId === 'object' && user.departmentId !== null 
+            ? user.departmentId._id 
+            : user.departmentId;
+          
+          filteredUsers = filteredUsers.filter((u: any) => {
+            const uDeptId = typeof u.departmentId === 'object' && u.departmentId !== null
+              ? u.departmentId._id
+              : u.departmentId;
+            return uDeptId === userDeptId;
+          });
+        }
+        
+        setUsers(filteredUsers);
+        setUserPagination(prev => ({
+          ...prev,
+          total: response.data.pagination.total,
+          pages: response.data.pagination.pages
+        }));
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch users:', error);
+      toast.error('Failed to load users');
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, [userPage, userPagination.limit, isDepartmentAdmin, user?.departmentId]);
+
+  const fetchGrievances = useCallback(async (page = grievancePage) => {
+    setLoadingGrievances(true);
+    try {
+      const response = await grievanceAPI.getAll({ page, limit: grievancePagination.limit });
+      if (response.success) {
+        setGrievances(response.data.grievances);
+        setGrievancePagination(prev => ({
+          ...prev,
+          total: response.data.pagination.total,
+          pages: response.data.pagination.pages
+        }));
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch grievances:', error);
+      toast.error('Failed to load grievances');
+    } finally {
+      setLoadingGrievances(false);
+    }
+  }, [grievancePage, grievancePagination.limit]);
+
+  const fetchAppointments = useCallback(async (page = appointmentPage) => {
+    setLoadingAppointments(true);
+    try {
+      const response = await appointmentAPI.getAll({ page, limit: appointmentPagination.limit });
+      if (response.success) {
+        setAppointments(response.data.appointments);
+        setAppointmentPagination(prev => ({
+          ...prev,
+          total: response.data.pagination.total,
+          pages: response.data.pagination.pages
+        }));
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch appointments:', error);
+      toast.error('Failed to load appointments');
+    } finally {
+      setLoadingAppointments(false);
+    }
+  }, [appointmentPage, appointmentPagination.limit]);
+
   useEffect(() => {
     if (mounted && user && user.role !== 'SUPER_ADMIN') {
       fetchDashboardData();
@@ -426,188 +603,16 @@ function DashboardContent() {
 
       return () => clearInterval(pollInterval);
     }
-  }, [mounted, user, grievancePage, appointmentPage, departmentPage, userPage]);
-
+  }, [mounted, user, grievancePage, appointmentPage, departmentPage, userPage, fetchDashboardData, fetchDepartments, fetchUsers, fetchCompany, fetchGrievances, fetchAppointments, prevGrievanceCount, prevAppointmentCount]);
+ 
   useEffect(() => {
     if (mounted && user && activeTab === 'analytics') {
       fetchPerformanceData();
       fetchHourlyData();
       fetchCategoryData();
     }
-  }, [mounted, user, activeTab]);
+  }, [mounted, user, activeTab, fetchPerformanceData, fetchHourlyData, fetchCategoryData]);
 
-  const fetchPerformanceData = async () => {
-    try {
-      const response = await apiClient.get('/analytics/performance');
-      if (response.success) {
-        setPerformanceData(response.data);
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch performance data:', error);
-    }
-  };
-
-  const fetchHourlyData = async () => {
-    try {
-      const response = await apiClient.get('/analytics/hourly?days=7');
-      if (response.success) {
-        setHourlyData(response.data);
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch hourly data:', error);
-    }
-  };
-
-  const fetchCategoryData = async () => {
-    try {
-      const response = await apiClient.get('/analytics/category');
-      if (response.success) {
-        setCategoryData(response.data);
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch category data:', error);
-    }
-  };
-
-  const fetchDashboardData = async () => {
-    setLoadingStats(true);
-    try {
-      const response = await apiClient.get<{ success: boolean; data: DashboardStats }>('/analytics/dashboard');
-      if (response.success) {
-        setStats(response.data);
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch dashboard stats:', error);
-      toast.error('Failed to load dashboard statistics');
-    } finally {
-      setLoadingStats(false);
-    }
-  };
-
-  const fetchCompany = async () => {
-    if (!user || user.role !== 'COMPANY_ADMIN') return;
-    
-    try {
-      const response = await companyAPI.getMyCompany();
-      if (response.success) {
-        setCompany(response.data.company);
-      }
-    } catch (error: any) {
-      // CompanyAdmin might not have company associated
-      console.log('Company details not available:', error.message);
-    }
-  };
-
-  const fetchDepartments = async (page = departmentPage) => {
-    setLoadingDepartments(true);
-    try {
-      const response = await departmentAPI.getAll({ page, limit: departmentPagination.limit });
-      if (response.success) {
-        let filteredDepartments = response.data.departments;
-        
-        // For department admin, only show their own department
-        if (isDepartmentAdmin && user?.departmentId) {
-          const userDeptId = typeof user.departmentId === 'object' && user.departmentId !== null 
-            ? (user.departmentId as any)._id || (user.departmentId as any).toString()
-            : user.departmentId;
-          
-          filteredDepartments = filteredDepartments.filter((dept: Department) => {
-            const deptId = dept._id?.toString() || dept._id;
-            const userDeptIdStr = userDeptId?.toString() || userDeptId;
-            return deptId === userDeptIdStr;
-          });
-        }
-        
-        setDepartments(filteredDepartments);
-        setDepartmentPagination(prev => ({
-          ...prev,
-          total: response.data.pagination.total,
-          pages: response.data.pagination.pages
-        }));
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch departments:', error);
-      toast.error('Failed to load departments');
-    } finally {
-      setLoadingDepartments(false);
-    }
-  };
-
-  const fetchUsers = async (page = userPage) => {
-    setLoadingUsers(true);
-    try {
-      const response = await userAPI.getAll({ page, limit: userPagination.limit });
-      if (response.success) {
-        let filteredUsers = response.data.users;
-        
-        // Filter users by department for department admins
-        if (isDepartmentAdmin && user?.departmentId) {
-          const userDeptId = typeof user.departmentId === 'object' && user.departmentId !== null 
-            ? user.departmentId._id 
-            : user.departmentId;
-          
-          filteredUsers = filteredUsers.filter((u: any) => {
-            const uDeptId = typeof u.departmentId === 'object' && u.departmentId !== null
-              ? u.departmentId._id
-              : u.departmentId;
-            return uDeptId === userDeptId;
-          });
-        }
-        
-        setUsers(filteredUsers);
-        setUserPagination(prev => ({
-          ...prev,
-          total: response.data.pagination.total,
-          pages: response.data.pagination.pages
-        }));
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch users:', error);
-      toast.error('Failed to load users');
-    } finally {
-      setLoadingUsers(false);
-    }
-  };
-
-  const fetchGrievances = async (page = grievancePage) => {
-    setLoadingGrievances(true);
-    try {
-      const response = await grievanceAPI.getAll({ page, limit: grievancePagination.limit });
-      if (response.success) {
-        setGrievances(response.data.grievances);
-        setGrievancePagination(prev => ({
-          ...prev,
-          total: response.data.pagination.total,
-          pages: response.data.pagination.pages
-        }));
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch grievances:', error);
-      toast.error('Failed to load grievances');
-    } finally {
-      setLoadingGrievances(false);
-    }
-  };
-
-  const fetchAppointments = async (page = appointmentPage) => {
-    setLoadingAppointments(true);
-    try {
-      const response = await appointmentAPI.getAll({ page, limit: appointmentPagination.limit });
-      if (response.success) {
-        setAppointments(response.data.appointments);
-        setAppointmentPagination(prev => ({
-          ...prev,
-          total: response.data.pagination.total,
-          pages: response.data.pagination.pages
-        }));
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch appointments:', error);
-      toast.error('Failed to load appointments');
-    } finally {
-      setLoadingAppointments(false);
-    }
-  };
 
   const handleSort = (key: string, tab: string) => {
     let direction: 'asc' | 'desc' | null = 'asc';
@@ -805,10 +810,6 @@ function DashboardContent() {
     return null;
   }
 
-  const isCompanyAdmin = user.role === 'COMPANY_ADMIN';
-  const isDepartmentAdmin = user.role === 'DEPARTMENT_ADMIN';
-  const isOperator = user.role === 'OPERATOR';
-  const isAnalyticsViewer = user.role === 'ANALYTICS_VIEWER';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">

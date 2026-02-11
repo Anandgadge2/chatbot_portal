@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import FlowCanvas from '@/components/flow-builder/FlowCanvas';
 import { Toaster, toast } from 'react-hot-toast';
 import { ArrowLeft, Save } from 'lucide-react';
@@ -52,7 +52,7 @@ export default function FlowBuilderPage() {
     }
   };
 
-  const handleSave = (nodes: FlowNode[], edges: FlowEdge[]) => {
+  const handleSave = useCallback((nodes: FlowNode[], edges: FlowEdge[]) => {
     setSaving(true);
     
     const flowData = {
@@ -114,7 +114,7 @@ export default function FlowBuilderPage() {
         setSaving(false);
       }
     }, 500);
-  };
+  }, [flowName, flowId, isNewFlow, router]);
 
   const handleSaveClick = () => {
     // Trigger save event that FlowCanvas listens to
@@ -130,7 +130,7 @@ export default function FlowBuilderPage() {
 
     window.addEventListener('flow:data', handleFlowData);
     return () => window.removeEventListener('flow:data', handleFlowData);
-  }, [flowName, flowId, isNewFlow]);
+  }, [flowName, flowId, isNewFlow, handleSave]);
 
   const handleBack = () => {
     if (confirm('Are you sure you want to leave? Any unsaved changes will be lost.')) {

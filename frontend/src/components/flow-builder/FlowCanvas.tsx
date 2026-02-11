@@ -100,7 +100,7 @@ export default function FlowCanvas({
     }, 500); // Debounce 500ms
 
     return () => clearTimeout(timeoutId);
-  }, [nodes, edges]);
+  }, [nodes, edges, historyIndex]);
 
   // Undo function
   const handleUndo = useCallback(() => {

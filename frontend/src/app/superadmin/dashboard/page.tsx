@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -95,7 +95,7 @@ export default function SuperAdminDashboard() {
     }
   }, [user, loading, router]);
 
-  const fetchCompanies = async (page = companyPage) => {
+  const fetchCompanies = useCallback(async (page = companyPage) => {
     setCompaniesLoading(true);
     try {
       const response = await companyAPI.getAll({ page, limit: companyPagination.limit });
@@ -112,9 +112,9 @@ export default function SuperAdminDashboard() {
     } finally {
       setCompaniesLoading(false);
     }
-  };
+  }, [companyPage, companyPagination.limit]);
 
-  const fetchDepartments = async (page = departmentPage) => {
+  const fetchDepartments = useCallback(async (page = departmentPage) => {
     try {
       const response = await departmentAPI.getAll({ page, limit: departmentPagination.limit });
       if (response.success) {
@@ -128,9 +128,9 @@ export default function SuperAdminDashboard() {
     } catch (error: any) {
       toast.error('Failed to fetch departments');
     }
-  };
+  }, [departmentPage, departmentPagination.limit]);
 
-  const fetchUsers = async (page = userPage) => {
+  const fetchUsers = useCallback(async (page = userPage) => {
     try {
       const response = await userAPI.getAll({ page, limit: userPagination.limit, role: userRoleFilter });
       if (response.success) {
@@ -144,7 +144,7 @@ export default function SuperAdminDashboard() {
     } catch (error: any) {
       toast.error('Failed to fetch users');
     }
-  };
+  }, [userPage, userPagination.limit, userRoleFilter]);
 
   const fetchStats = async () => {
     // Fetch each stat independently so one 403/failure doesn't block others (e.g. Users tab still loads)
@@ -287,19 +287,19 @@ export default function SuperAdminDashboard() {
     if (mounted && user) {
       fetchCompanies(companyPage);
     }
-  }, [mounted, user, companyPage]);
+  }, [mounted, user, companyPage, fetchCompanies]);
 
   useEffect(() => {
     if (mounted && user) {
       fetchDepartments(departmentPage);
     }
-  }, [mounted, user, departmentPage]);
+  }, [mounted, user, departmentPage, fetchDepartments]);
 
   useEffect(() => {
     if (mounted && user) {
       fetchUsers(userPage);
     }
-  }, [mounted, user, userPage, userRoleFilter]);
+  }, [mounted, user, userPage, userRoleFilter, fetchUsers]);
 
   useEffect(() => {
     if (mounted && user) {
