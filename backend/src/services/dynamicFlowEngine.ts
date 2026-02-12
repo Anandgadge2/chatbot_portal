@@ -691,6 +691,23 @@ export class DynamicFlowEngine {
     try {
       const { method, endpoint, headers, body, saveResponseTo, nextStepId } = step.apiConfig;
 
+      // Special handling for internal availability - skip HTTP if possible
+      if (endpoint.includes('/api/availability/chatbot/')) {
+        console.log('🗓️ Internal availability request detected, processing locally');
+        try {
+          const companyId = endpoint.split('/').pop()?.split('?')[0];
+          if (companyId) {
+            const data = await this.handleInternalAvailability(companyId, body);
+            if (data) {
+              await this.processApiResponse(step, data);
+              return;
+            }
+          }
+        } catch (localError) {
+          console.error('❌ Local availability handling failed, falling back to HTTP:', localError);
+        }
+      }
+
       // Build URL with query parameters for GET requests (replace placeholders in body values e.g. {appointmentDate})
       let url = this.replacePlaceholders(endpoint);
       if (method === 'GET' && body) {
@@ -706,21 +723,26 @@ export class DynamicFlowEngine {
         }
       }
 
+      console.log(`🌐 Preparing API call: ${method} ${url}`);
+      
       // Make API call using built-in fetch (Node.js 18+) or axios
       let fetchFn: any;
       try {
         // Try to use global fetch (Node.js 18+)
         if (typeof fetch !== 'undefined') {
+          console.log('   Using global fetch');
           fetchFn = fetch;
         } else {
           // Fallback to axios if available
+          console.log('   Global fetch not found, using axios fallback');
           const axios = (await import('axios')).default;
           fetchFn = async (url: string, options: any) => {
             const response = await axios({
               url,
               method: options.method || 'GET',
               headers: options.headers || {},
-              data: options.body ? JSON.parse(options.body) : undefined
+              data: options.body ? JSON.parse(options.body) : undefined,
+              validateStatus: () => true // Don't throw on error status codes
             });
             return {
               json: async () => response.data,
@@ -729,8 +751,8 @@ export class DynamicFlowEngine {
             };
           };
         }
-      } catch (error) {
-        console.error('❌ Failed to load fetch or axios:', error);
+      } catch (error: any) {
+        console.error('❌ Failed to load fetch or axios:', error.message);
         throw new Error('API call functionality not available');
       }
       
@@ -755,7 +777,14 @@ export class DynamicFlowEngine {
       }
       console.log(`🌐 Making API call: ${method} ${url}`);
       const response = await fetchFn(url, options);
+      console.log(`📡 API Response status: ${response.status} ${response.ok ? 'OK' : 'ERROR'}`);
       const data = await response.json();
+      console.log(`📝 API Response data:`, JSON.stringify(data).substring(0, 500));
+
+      if (!response.ok) {
+        console.error(`❌ API call returned error status ${response.status}:`, data);
+        throw new Error(`API call failed with status ${response.status}`);
+      }
 
       // Save response to session if needed
       if (saveResponseTo) {
@@ -1117,6 +1146,29 @@ export class DynamicFlowEngine {
     // ✅ SECOND: Check buttonMapping (from button.nextStepId)
     const buttonMapping = this.session.data.buttonMapping || {};
     const nextStepIdFromMapping = buttonMapping[buttonId];
+    
+    // Check for special availability buttons (date_ or time_)
+    if (!nextStepIdFromMapping && (buttonId.startsWith('date_') || buttonId.startsWith('time_'))) {
+      console.log(`📅 Handling availability button: ${buttonId}`);
+      const nextStepId = this.session.data.availabilityNextStepId;
+      
+      if (buttonId.startsWith('date_')) {
+        const dateMapping = this.session.data.dateMapping || {};
+        this.session.data.appointmentDate = dateMapping[buttonId] || buttonId.replace('date_', '');
+      } else {
+        const timeMapping = this.session.data.timeMapping || {};
+        this.session.data.appointmentTime = timeMapping[buttonId] || buttonId.replace('time_', '');
+      }
+      
+      await updateSession(this.session);
+      
+      if (nextStepId) {
+        console.log(`   Executing next availability step: ${nextStepId}`);
+        await this.runNextStepIfDifferent(nextStepId, currentStep.stepId);
+        return;
+      }
+    }
+
     if (nextStepIdFromMapping) {
       console.log(`✅ Found button mapping: ${buttonId} → ${nextStepIdFromMapping}`);
       
@@ -1246,6 +1298,124 @@ export class DynamicFlowEngine {
       console.error(`❌ No mapping found for list row ${rowId}`);
       await this.sendErrorMessage();
     }
+  }
+
+  /**
+   * Internal handler for availability to avoid HTTP calls to self
+   */
+  private async handleInternalAvailability(companyId: string, body: any): Promise<any> {
+    const { departmentId, selectedDate, daysAhead } = body || {};
+    const dAhead = parseInt(String(this.replacePlaceholders(daysAhead || '30'))) || 30;
+    const sDate = selectedDate ? this.replacePlaceholders(selectedDate) : null;
+    const depId = departmentId ? this.replacePlaceholders(departmentId) : null;
+
+    try {
+      const Department = (await import('../models/Department')).default;
+      const AppointmentAvailability = (await import('../models/AppointmentAvailability')).default;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const query: any = { companyId, isActive: true };
+      if (depId && depId !== 'null') query.departmentId = depId;
+      else query.departmentId = { $exists: false };
+
+      const availability = await AppointmentAvailability.findOne(query);
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+      
+      if (sDate) {
+        // Return time slots
+        const targetDate = new Date(sDate);
+        const dayOfWeek = targetDate.getDay();
+        const dayName = dayNames[dayOfWeek];
+        const daySchedule = availability?.weeklySchedule[dayName];
+        
+        if (daySchedule && daySchedule.isAvailable) {
+          const timeSlots: any[] = [];
+          if (daySchedule.morning?.enabled) timeSlots.push({ time: daySchedule.morning.startTime, label: `🕘 ${daySchedule.morning.startTime} AM` });
+          if (daySchedule.afternoon?.enabled) timeSlots.push({ time: daySchedule.afternoon.startTime, label: `🕑 ${daySchedule.afternoon.startTime} PM` });
+          if (daySchedule.evening?.enabled) timeSlots.push({ time: daySchedule.evening.startTime, label: `🕔 ${daySchedule.evening.startTime} PM` });
+          
+          return { success: true, data: { formattedTimeSlots: timeSlots } };
+        }
+        return { success: true, data: { formattedTimeSlots: [] } };
+      } else {
+        // Return dates
+        const availableDates: any[] = [];
+        for (let i = 0; i < dAhead; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() + i);
+          const dayOfWeek = date.getDay();
+          const dayName = dayNames[dayOfWeek];
+          const daySchedule = availability?.weeklySchedule[dayName];
+          if (daySchedule && daySchedule.isAvailable) {
+            availableDates.push({
+              date: date.toISOString().split('T')[0],
+              formattedDate: date.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })
+            });
+          }
+          if (availableDates.length >= 3) break;
+        }
+        return { success: true, data: { availableDates } };
+      }
+    } catch (error) {
+      console.error('❌ Internal availability error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Common logic for processing API response (used by both HTTP and internal calls)
+   */
+  private async processApiResponse(step: IFlowStep, data: any): Promise<void> {
+    const { saveResponseTo, nextStepId } = step.apiConfig || {};
+    
+    if (saveResponseTo) {
+      this.session.data[saveResponseTo] = data;
+    }
+
+    if (data.success && data.data) {
+      const availabilityData = data.data;
+      
+      if (availabilityData.availableDates && Array.isArray(availabilityData.availableDates)) {
+        const dates = availabilityData.availableDates;
+        const buttons = dates.slice(0, 3).map((d: any) => ({
+          id: `date_${d.date}`,
+          title: d.formattedDate || d.date
+        }));
+        
+        if (buttons.length > 0) {
+          const message = this.replacePlaceholders(step.messageText || '📅 Please select a date:');
+          await sendWhatsAppButtons(this.company, this.userPhone, message, buttons);
+          this.session.data.currentStepId = step.stepId;
+          this.session.data.availabilityNextStepId = nextStepId || null;
+          this.session.data.dateMapping = {};
+          dates.forEach((d: any) => { this.session.data.dateMapping[`date_${d.date}`] = d.date; });
+          await updateSession(this.session);
+          return;
+        }
+      }
+      
+      if (availabilityData.formattedTimeSlots && Array.isArray(availabilityData.formattedTimeSlots)) {
+        const slots = availabilityData.formattedTimeSlots;
+        const buttons = slots.slice(0, 3).map((s: any) => ({
+          id: `time_${s.time}`,
+          title: s.label || s.time
+        }));
+        
+        if (buttons.length > 0) {
+          const message = this.replacePlaceholders(step.messageText || '⏰ Please select a time:');
+          await sendWhatsAppButtons(this.company, this.userPhone, message, buttons);
+          this.session.data.currentStepId = step.stepId;
+          this.session.data.availabilityNextStepId = nextStepId || null;
+          this.session.data.timeMapping = {};
+          slots.forEach((s: any) => { this.session.data.timeMapping[`time_${s.time}`] = s.time; });
+          await updateSession(this.session);
+          return;
+        }
+      }
+    }
+
+    await this.runNextStepIfDifferent(nextStepId as string, step.stepId);
   }
 }
 
