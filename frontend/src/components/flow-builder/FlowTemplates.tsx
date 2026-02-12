@@ -21,8 +21,8 @@ export interface FlowTemplate {
  */
 export const FLOW_TEMPLATES: FlowTemplate[] = [
   {
-    id: 'Jharsugda-full-flow',
-    name: 'Collectorate Jharsugda– Full Citizen Services Flow (All-in-One)',
+    id: 'Jharsuguda-full-flow',
+    name: 'Collectorate Jharsuguda– Full Citizen Services Flow (All-in-One)',
     description: 'Complete flow (Meta limits: max 3 buttons, 20 chars each): language selection (EN/Hi/Mr), main menu (Grievance, Appointment, Track), grievance, appointment, track status. Dynamic values from backend/session.',
     icon: <MessageSquare className="w-5 h-5" />,
     triggers: [
@@ -35,7 +35,7 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
         type: 'interactive_buttons',
         content: {
           text: {
-            en: '🇮🇳 *Collectorate Jharsugda - Official Digital Portal*\n\nNamaskar! Welcome to the official WhatsApp service of Collectorate Jharsugda Sahaj.\n\nWe are dedicated to providing transparent and efficient services to all citizens.\n\n👇 *Please select your preferred language:*'
+            en: '🇮🇳 *Collectorate Jharsuguda Odisha - Official Digital Portal*\n\nNamaskar! Welcome to the official WhatsApp service of Collectorate Jharsuguda. \n\nWe are dedicated to providing transparent and efficient services to all citizens.\n\n👇 *Please select your preferred language:*'
           },
           buttons: [
             { id: 'lang_en', text: { en: '🇬🇧 English' }, nextStep: 'main_menu_en' },
@@ -55,7 +55,7 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
         type: 'interactive_buttons',
         content: {
           text: {
-            en: '🏛️ *Citizen Services Menu*\n\nWelcome to the Collectorate Jharsugda Sahaj Digital Helpdesk.\n\n👇 *Please select a service:*'
+            en: '🏛️ *Citizen Services Menu*\n\nWelcome to the Collectorate Jharsuguda Digital Helpdesk.\n\n👇 *Please select a service:*'
           },
           buttons: [
             { id: 'grievance_en', text: { en: '📝 File Grievance' }, nextStep: 'grievance_start' },
@@ -110,7 +110,7 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
         ],
         nextStep: null
       },
-      { stepId: 'grievance_start', type: 'message', content: { text: { en: '📝 *Register a Grievance*\n\nYou can file a formal complaint regarding any ZP department.\n\nTo begin, please provide the details as requested.' } }, nextStep: 'grievance_name' },
+      { stepId: 'grievance_start', type: 'message', content: { text: { en: '📝 *Register a Grievance*\n\nYou can file a formal complaint regarding any Collectorate department.\n\nTo begin, please provide the details as requested.' } }, nextStep: 'grievance_name' },
       {
         stepId: 'grievance_name',
         type: 'collect_input',
@@ -181,7 +181,7 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
         },
         nextStep: null
       },
-      { stepId: 'appointment_start', type: 'message', content: { text: { en: '📅 *Book an Official Appointment*\n\nSchedule a meeting with the CEO, Zilla Parishad. Please provide the required details.' } }, nextStep: 'appointment_name' },
+      { stepId: 'appointment_start', type: 'message', content: { text: { en: '📅 *Book an Official Appointment*\n\nSchedule a meeting with the CEO, Collectorate Jharsuguda. Please provide the required details.' } }, nextStep: 'appointment_name' },
       {
         stepId: 'appointment_name',
         type: 'collect_input',

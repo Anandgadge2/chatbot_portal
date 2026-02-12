@@ -19,7 +19,7 @@ export interface ICompanyEmailConfig extends Document {
     pass: string;
   };
   fromEmail: string; // e.g. noreply@example.com
-  fromName: string; // e.g. "Zilla Parishad Amravati"
+  fromName: string; // e.g. "Collectorate Jharsuguda Odisha"
 
   isActive: boolean;
   isVerified?: boolean;

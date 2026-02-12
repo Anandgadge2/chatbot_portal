@@ -11,7 +11,7 @@ import { UserRole } from '../config/constants';
 dotenv.config();
 
 const EXCEL_FILE_PATH = path.join(__dirname, '../../../for dept user mapping-3.02.2026.xlsx');
-const TARGET_COMPANY_ID = '6989db83453881ef7ba5c778'; // Collectorate Jharsugda
+const TARGET_COMPANY_ID = '6989db83453881ef7ba5c778'; // Collectorate Jharsuguda
 const DEFAULT_PASSWORD = 'Password@123';
 
 async function seedData() {

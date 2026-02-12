@@ -199,7 +199,7 @@ export async function notifyDepartmentAdminOnCreation(
           appointmentId: data.appointmentId,
           citizenName: data.citizenName,
           citizenPhone: data.citizenPhone,
-          departmentName: 'Collectorate Jharsugda Office',
+          departmentName: 'Collectorate Jharsuguda Office',
           purpose: data.purpose,
           createdAt: data.createdAt,
           appointmentDate: data.appointmentDate,
@@ -218,7 +218,7 @@ export async function notifyDepartmentAdminOnCreation(
             `🎫 *Reference ID:* ${data.appointmentId}\n` +
             `👤 *Citizen Name:* ${data.citizenName}\n` +
             `📞 *Contact Number:* ${data.citizenPhone}\n` +
-            `🏢 *Department:* Collectorate Jharsugda Office\n` +
+            `🏢 *Department:* Collectorate Jharsuguda Office\n` +
             `📝 *Purpose:* ${data.purpose}\n` +
             `📅 *Requested Date:* ${data.appointmentDate ? new Date(data.appointmentDate).toLocaleDateString('en-IN') : 'N/A'}\n` +
             `⏰ *Requested Time:* ${data.appointmentTime || 'N/A'}\n` +
@@ -240,7 +240,7 @@ export async function notifyDepartmentAdminOnCreation(
               appointmentId: data.appointmentId,
               citizenName: data.citizenName,
               citizenPhone: data.citizenPhone,
-              departmentName: 'Collectorate Jharsugda Office',
+              departmentName: 'Collectorate Jharsuguda Office',
               purpose: data.purpose,
               location: data.location,
               createdAt: data.createdAt,

@@ -97,7 +97,7 @@ export async function sendEmail(
         logger.warn(`⚠️ ${errorMsg}`);
         return { success: false, error: errorMsg };
       }
-      fromLine = `"${process.env.SMTP_FROM_NAME || 'Zilla Parishad Amravati'}" <${process.env.SMTP_USER}>`;
+      fromLine = `"${process.env.SMTP_FROM_NAME || 'Collectorate Jharsuguda Odisha'}" <${process.env.SMTP_USER}>`;
     }
 
     const mailOptions: SendMailOptions = {
@@ -168,7 +168,7 @@ export async function testEmailConfiguration(companyId?: string | mongoose.Types
         host: process.env.SMTP_HOST || 'smtp.gmail.com',
         port: process.env.SMTP_PORT || '465',
         user: process.env.SMTP_USER,
-        fromName: process.env.SMTP_FROM_NAME || 'Zilla Parishad Amravati'
+        fromName: process.env.SMTP_FROM_NAME || 'Collectorate Jharsuguda Odisha'
       }
     };
   } catch (err: any) {
@@ -455,7 +455,7 @@ export function generateNotificationEmail(
   action: 'created' | 'assigned' | 'resolved',
   data: any
 ): { subject: string; html: string; text: string } {
-  const companyName = data.companyName || 'Zilla Parishad Amravati';
+  const companyName = data.companyName || 'Collectorate Jharsuguda Odisha';
   const recipientName = data.recipientName || 'Sir/Madam';
 
   // Common styles

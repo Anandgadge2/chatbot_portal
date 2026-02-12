@@ -356,7 +356,7 @@ export default function EmailConfigPage() {
                 <Label htmlFor="fromName">From Name *</Label>
                 <Input
                   id="fromName"
-                  placeholder="Zilla Parishad Amravati"
+                  placeholder="Collectorate Jharsuguda Odisha"
                   value={config?.fromName || ''}
                   onChange={(e) => updateConfig('fromName', e.target.value)}
                   disabled={!isEditing}

@@ -363,7 +363,7 @@ export default function CompletedAppointmentsPage() {
                         <td className="px-6 py-4 text-left">
                           <div className="flex flex-col space-y-1 min-w-[200px] max-w-md">
                             <span className="text-sm font-semibold text-gray-900 whitespace-normal break-words">
-                              Collectorate Jharsugda Office
+                              Collectorate Jharsuguda Office
                             </span>
                             <span className="text-xs text-gray-600 whitespace-normal break-words">
                               {appointment.purpose || 'No purpose provided'}

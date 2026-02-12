@@ -13,7 +13,7 @@ import { logger } from '../config/logger';
 export async function uploadWhatsAppMediaToCloudinary(
   mediaId: string, 
   accessToken: string,
-  folder: string = 'ZP Amravati'
+  folder: string = 'Collectorate Jharsuguda Odisha'
 ): Promise<string | null> {
   try {
     if (!mediaId || !accessToken) {

@@ -2754,7 +2754,7 @@ function DashboardContent() {
                             <td className="px-4 py-4">
                               <div className="flex flex-col min-w-[200px] max-w-[250px]">
                                 <span className="text-xs font-semibold text-gray-700 whitespace-normal break-words">
-                                 Collectrate Jharsugda Office 
+                                 Collectorate Jharsuguda Office 
                                 </span>
                                 <span className="text-[10px] text-gray-500 italic whitespace-normal break-words">{appointment.purpose}</span>
                               </div>
